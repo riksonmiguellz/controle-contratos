@@ -397,7 +397,8 @@ const Store={
 
 /* ---------- derived ---------- */
 const isDone=st=>st==="concluida"||st==="entregue";
-function autoProgress(c){const es=c.etapas||[];if(!es.length)return 0;return Math.round(es.filter(e=>isDone(e.status)).length/es.length*100);}
+const STAGE_WEIGHT={pendente:0,andamento:0.5,concluida:1,entregue:1}; // "Em andamento" conta meio caminho
+function autoProgress(c){const es=c.etapas||[];if(!es.length)return 0;const soma=es.reduce((a,e)=>a+(STAGE_WEIGHT[e.status]||0),0);return Math.round(soma/es.length*100);}
 function progress(c){ if(c.autoProgresso===false && c.progressoManual!=null && c.progressoManual!=="") return Math.max(0,Math.min(100,+c.progressoManual)); return autoProgress(c); }
 const getFin=c=>c.fin||{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]};
 function recebido(c){return getFin(c).parcelas.filter(p=>p.pago).reduce((s,p)=>s+(+p.valor||0),0);}
