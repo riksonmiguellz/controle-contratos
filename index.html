@@ -3,7 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Controle de Contratos · Fortuna</title>
+<title>Controle de Contratos · Fortuna AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F6F5FA; --panel:#FFFFFF; --panel-2:#FBFAFD; --ink:#191526; --ink-soft:#5B5470;
@@ -23,8 +26,22 @@
 :root[data-theme="dark"]{--bg:#0C0913;--panel:#151021;--panel-2:#1B1530;--ink:#F3F0FA;--ink-soft:#A79FBE;--line:#271F3D;--line-strong:#352A50;--violet:#9D7BFF;--violet-soft:#B399FF;--violet-tint:#221838;--navy:#9FB4D6;--ok:#3DD07E;--ok-tint:#12271C;--warn:#F0B24B;--warn-tint:#2E2411;--crit:#FF6B6B;--crit-tint:#301518;--info:#6BA5FF;--info-tint:#122238;--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,"Inter",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
-h1,h2,h3{margin:0;letter-spacing:-.01em;text-wrap:balance}
+body{background:var(--bg);color:var(--ink);font-family:"Inter","Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance;font-family:"Montserrat","Inter",system-ui,sans-serif;font-weight:700}
+.brand,.bd,.brand-dot,.pill-role,.kpi .lab,.eyebrow{font-family:"Montserrat","Inter",system-ui,sans-serif}
+/* ===== FORTUNA AI — identidade premium ===== */
+@media (prefers-color-scheme:dark){:root{--bg:#0A0616;--panel:#150D28;--panel-2:#1C1236;--line:#2A1E45;--line-strong:#3A2A5C;}}
+:root[data-theme="dark"]{--bg:#0A0616;--panel:#150D28;--panel-2:#1C1236;--line:#2A1E45;--line-strong:#3A2A5C;}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--violet);opacity:.9;margin-bottom:14px}
+.brand-dot,.bd{background:linear-gradient(140deg,#8B63FF,#6D3BF5 45%,#3A1D8C);box-shadow:0 6px 22px -4px color-mix(in srgb,var(--violet) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.25)}
+.gate{position:relative;overflow:hidden}
+.gate::before{content:"";position:absolute;top:-30%;left:50%;transform:translateX(-50%);width:680px;height:520px;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--violet) 30%,transparent),transparent 70%);pointer-events:none;filter:blur(10px)}
+.gate-card{position:relative;z-index:1}
+:root[data-theme="dark"] .gate-card,@media(prefers-color-scheme:dark){.gate-card{box-shadow:0 20px 60px -18px rgba(109,59,245,.45),0 1px 0 rgba(255,255,255,.04) inset}}
+.kpi.accent{background:linear-gradient(135deg,#7C4DFF,#5A2CC9 55%,#231152);box-shadow:0 14px 34px -12px color-mix(in srgb,var(--violet) 65%,transparent)}
+.wordmark{font-family:"Montserrat",sans-serif;font-weight:800;letter-spacing:.02em}
+.wordmark b{color:var(--violet)}
 button{font-family:inherit;cursor:pointer}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -170,8 +187,9 @@ body.team .hide-team{display:none !important}
 <div id="gate" class="gate">
   <div class="gate-card">
     <div class="brand-dot">F</div>
+    <div class="eyebrow">Fortuna AI Advisors</div>
     <h1>Controle de Contratos</h1>
-    <div class="sub">Fortis Fortuna Advisors · gestão de contratos ativos</div>
+    <div class="sub">Gestão dos contratos ativos · visão total &amp; visão equipe</div>
     <div id="modeTag" class="mode-tag">💾 Modo local</div>
     <div class="roles">
       <button class="role-btn" id="btnGestao">
@@ -194,7 +212,7 @@ body.team .hide-team{display:none !important}
 
 <div id="app" class="hidden">
   <div class="topbar">
-    <div class="brand"><span class="bd">F</span> Controle de Contratos</div>
+    <div class="brand"><span class="bd">F</span> <span class="wordmark">Fortuna<b>&nbsp;AI</b></span> · Contratos</div>
     <span class="pill-role" id="rolePill">—</span>
     <span class="pill-mode" id="modePill">Local</span>
     <div class="spacer"></div>
@@ -262,6 +280,7 @@ let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="todos", QUERY="";
 let sb=null;          // supabase client
+let lastLocalWrite=0; // guarda p/ evitar que o realtime da própria escrita atropele a UI
 
 /* ---------- seed (modo local) ---------- */
 function seed(){return [
@@ -315,9 +334,10 @@ const Store={
     const {data:{session}}=await sb.auth.getSession();
     SESSION=!!session;
     await this.reload();
-    // realtime
-    sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},()=>this.reload().then(render)).subscribe();
-    sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) this.reload().then(render);}).subscribe();
+    // realtime — só reage a mudanças de OUTROS usuários (ignora o eco da própria escrita)
+    const fromOthers=()=>{ if(Date.now()-lastLocalWrite>2500) this.reload().then(render).catch(()=>{}); };
+    sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},fromOthers).subscribe();
+    sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) fromOthers(); }).subscribe();
   },
   persistLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}},
   async reload(){
@@ -331,27 +351,34 @@ const Store={
     }
     DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
   },
-  async saveContract(c,{withFin}={}){
-    if(!CLOUD){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; else DB.push(c); this.persistLocal(); return; }
+  _upsertLocal(c){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; else DB.push(c); },
+  async saveContract(c,{withFin}={}){   // criar/editar contrato (gestão)
+    lastLocalWrite=Date.now();
+    if(!CLOUD){ this._upsertLocal(c); this.persistLocal(); return; }
     const {error}=await sb.from("contracts").upsert(cToRow(c));
-    if(error)throw error;
-    if(withFin && SESSION){ const {error:e2}=await sb.from("contract_finance").upsert(cToFinRow(c)); if(e2)throw e2; }
-    await this.reload();
+    if(error){ await this.reload().catch(()=>{}); throw error; }
+    if(withFin && SESSION){ const {error:e2}=await sb.from("contract_finance").upsert(cToFinRow(c)); if(e2){ await this.reload().catch(()=>{}); throw e2; } }
+    this._upsertLocal(c);   // otimista: DB já reflete, sem reload que atropela
   },
   async patchContract(c){   // etapas/progresso/status — equipe (anon) pode via UPDATE
-    if(!CLOUD){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; this.persistLocal(); return; }
+    lastLocalWrite=Date.now();
+    if(!CLOUD){ this._upsertLocal(c); this.persistLocal(); return; }
     const row=cToRow(c); delete row.id;
     const {error}=await sb.from("contracts").update(row).eq("id",c.id);
-    if(error)throw error;
-    await this.reload();
+    if(error){ await this.reload().catch(()=>{}); throw error; }
   },
-  async saveFin(c){
-    if(!CLOUD){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; this.persistLocal(); return; }
-    const {error}=await sb.from("contract_finance").upsert(cToFinRow(c)); if(error)throw error; await this.reload();
+  async saveFin(c){         // parcelas/despesas (gestão)
+    lastLocalWrite=Date.now();
+    if(!CLOUD){ this._upsertLocal(c); this.persistLocal(); return; }
+    const {error}=await sb.from("contract_finance").upsert(cToFinRow(c));
+    if(error){ await this.reload().catch(()=>{}); throw error; }
   },
   async remove(id){
+    lastLocalWrite=Date.now();
     if(!CLOUD){ DB=DB.filter(x=>x.id!==id); this.persistLocal(); return; }
-    const {error}=await sb.from("contracts").delete().eq("id",id); if(error)throw error; await this.reload();
+    const {error}=await sb.from("contracts").delete().eq("id",id);
+    if(error){ await this.reload().catch(()=>{}); throw error; }
+    DB=DB.filter(x=>x.id!==id);
   },
   async replaceAll(arr){
     if(!CLOUD){ DB=arr; this.persistLocal(); return; }
@@ -619,7 +646,10 @@ $("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{ty
 $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
 $("#printBtn").onclick=()=>window.print();
-function renderFoot(){$("#footNote").innerHTML=ROLE==="gestao"?(CLOUD?"Modo nuvem — dados sincronizados no Supabase. Valores e pagamentos ficam numa tabela protegida (a equipe não recebe esses dados).":"Modo local — dados salvos neste navegador. Use <b>Backup</b> para gerar arquivo e <b>Importar</b> para restaurar. Nenhum pagamento foi presumido — marque os pagos."):"Visão Equipe — valores e pagamentos ocultos. Marque as etapas e ajuste o progresso conforme o andamento.";}
+function renderFoot(){
+  const msg=ROLE==="gestao"?(CLOUD?"Modo nuvem — dados sincronizados no Supabase. Valores e pagamentos ficam numa tabela protegida (a equipe não recebe esses dados).":"Modo local — dados salvos neste navegador. Use <b>Backup</b> para gerar arquivo e <b>Importar</b> para restaurar. Nenhum pagamento foi presumido — marque os pagos."):"Visão Equipe — valores e pagamentos ocultos. Marque as etapas e ajuste o progresso conforme o andamento.";
+  $("#footNote").innerHTML=`<span class="wordmark">Fortuna<b>&nbsp;AI</b> Advisors</span> · Controle de Contratos &nbsp;—&nbsp; ${msg}`;
+}
 
 /* ============================================================
    BOOT
