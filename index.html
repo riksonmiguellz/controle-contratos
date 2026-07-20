@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Controle de Contratos · Fortuna</title>
+<style>
+:root{
+  --bg:#F6F5FA; --panel:#FFFFFF; --panel-2:#FBFAFD; --ink:#191526; --ink-soft:#5B5470;
+  --line:#E7E3F0; --line-strong:#D8D2E6;
+  --violet:#6D3BF5; --violet-soft:#8B63FF; --violet-tint:#F0EAFF; --navy:#1C2E4A;
+  --ok:#12A150; --ok-tint:#E5F5EC; --warn:#C67C00; --warn-tint:#FBF0DC;
+  --crit:#D62F2F; --crit-tint:#FBE6E6; --info:#2563C9; --info-tint:#E5EEFB;
+  --shadow:0 1px 2px rgba(25,21,38,.06),0 8px 24px rgba(25,21,38,.06); --radius:14px;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0C0913; --panel:#151021; --panel-2:#1B1530; --ink:#F3F0FA; --ink-soft:#A79FBE;
+  --line:#271F3D; --line-strong:#352A50; --violet:#9D7BFF; --violet-soft:#B399FF; --violet-tint:#221838; --navy:#9FB4D6;
+  --ok:#3DD07E; --ok-tint:#12271C; --warn:#F0B24B; --warn-tint:#2E2411; --crit:#FF6B6B; --crit-tint:#301518; --info:#6BA5FF; --info-tint:#122238;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+}}
+:root[data-theme="light"]{--bg:#F6F5FA;--panel:#FFFFFF;--panel-2:#FBFAFD;--ink:#191526;--ink-soft:#5B5470;--line:#E7E3F0;--line-strong:#D8D2E6;--violet:#6D3BF5;--violet-soft:#8B63FF;--violet-tint:#F0EAFF;--navy:#1C2E4A;--ok:#12A150;--ok-tint:#E5F5EC;--warn:#C67C00;--warn-tint:#FBF0DC;--crit:#D62F2F;--crit-tint:#FBE6E6;--info:#2563C9;--info-tint:#E5EEFB;--shadow:0 1px 2px rgba(25,21,38,.06),0 8px 24px rgba(25,21,38,.06);}
+:root[data-theme="dark"]{--bg:#0C0913;--panel:#151021;--panel-2:#1B1530;--ink:#F3F0FA;--ink-soft:#A79FBE;--line:#271F3D;--line-strong:#352A50;--violet:#9D7BFF;--violet-soft:#B399FF;--violet-tint:#221838;--navy:#9FB4D6;--ok:#3DD07E;--ok-tint:#12271C;--warn:#F0B24B;--warn-tint:#2E2411;--crit:#FF6B6B;--crit-tint:#301518;--info:#6BA5FF;--info-tint:#122238;--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI",system-ui,-apple-system,"Inter",Roboto,Arial,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;letter-spacing:-.01em;text-wrap:balance}
+button{font-family:inherit;cursor:pointer}
+.mono{font-variant-numeric:tabular-nums}
+.hidden{display:none !important}
+.gate{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.gate-card{width:100%;max-width:452px;background:var(--panel);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:38px 34px;text-align:center}
+.brand-dot{width:46px;height:46px;border-radius:13px;margin:0 auto 18px;background:linear-gradient(135deg,var(--violet),var(--navy));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:20px}
+.gate h1{font-size:22px;margin-bottom:6px}
+.gate .sub{color:var(--ink-soft);font-size:14px;margin-bottom:24px}
+.gate .roles{display:flex;flex-direction:column;gap:12px}
+.role-btn{border:1px solid var(--line-strong);background:var(--panel-2);color:var(--ink);border-radius:12px;padding:15px 16px;text-align:left;display:flex;gap:13px;align-items:center;transition:.15s}
+.role-btn:hover{border-color:var(--violet);background:var(--violet-tint)}
+.role-btn .ic{font-size:20px}
+.role-btn .t{font-weight:650}
+.role-btn .d{font-size:12.5px;color:var(--ink-soft)}
+.pw-row{display:none;margin-top:14px;flex-direction:column;gap:8px}
+.pw-row.show{display:flex}
+input,select,textarea{font-family:inherit;font-size:14.5px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:11px 12px;width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-offset:1px;border-color:var(--violet)}
+.btn{border:1px solid transparent;border-radius:10px;padding:11px 16px;font-weight:650;font-size:14px;background:var(--violet);color:#fff;transition:.15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.07)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+.btn.ghost:hover{border-color:var(--violet);color:var(--violet)}
+.btn.sm{padding:7px 11px;font-size:13px}
+.btn.danger{background:var(--crit)}
+.err{color:var(--crit);font-size:13px;margin-top:10px;min-height:16px}
+.mode-tag{display:inline-flex;gap:6px;align-items:center;font-size:11.5px;font-weight:650;padding:4px 10px;border-radius:999px;background:var(--panel-2);border:1px solid var(--line-strong);color:var(--ink-soft);margin-bottom:18px}
+.topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--panel) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:12px 22px;flex-wrap:wrap}
+.topbar .brand{display:flex;align-items:center;gap:11px;font-weight:750}
+.topbar .brand .bd{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--violet),var(--navy));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:15px}
+.topbar .spacer{flex:1}
+.pill-role{font-size:12px;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--violet-tint);color:var(--violet);border:1px solid color-mix(in srgb,var(--violet) 30%,transparent)}
+.pill-mode{font-size:11.5px;font-weight:650;padding:5px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-soft)}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 22px 80px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
+.kpi .lab{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:650}
+.kpi .val{font-size:22px;font-weight:750;margin-top:6px;letter-spacing:-.02em}
+.kpi .val.small{font-size:18px}
+.kpi .sub{font-size:12px;color:var(--ink-soft);margin-top:3px}
+.kpi.accent{background:linear-gradient(135deg,var(--violet),var(--navy));border:none;color:#fff}
+.kpi.accent .lab,.kpi.accent .sub{color:rgba(255,255,255,.82)}
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.toolbar .search{position:relative;flex:1;min-width:180px}
+.toolbar .search input{padding-left:34px}
+.toolbar .search .mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink-soft)}
+.seg{display:flex;border:1px solid var(--line-strong);border-radius:10px;overflow:hidden}
+.seg button{background:var(--panel);border:none;padding:9px 13px;font-size:13px;color:var(--ink-soft);font-weight:600}
+.seg button.active{background:var(--violet-tint);color:var(--violet)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.card-head{display:flex;gap:15px;align-items:center;padding:16px 18px;cursor:pointer}
+.card-head:hover{background:var(--panel-2)}
+.c-title{flex:1;min-width:0}
+.c-title h3{font-size:16.5px;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.c-title .meta{font-size:12.5px;color:var(--ink-soft);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip{font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.chip.ativo{background:var(--ok-tint);color:var(--ok)}
+.chip.andamento{background:var(--info-tint);color:var(--info)}
+.chip.pausado{background:var(--warn-tint);color:var(--warn)}
+.chip.encerrado{background:var(--line);color:var(--ink-soft)}
+.chip.atrasado{background:var(--crit-tint);color:var(--crit)}
+.prog-wrap{width:140px;flex-shrink:0}
+.prog-num{font-size:12px;color:var(--ink-soft);margin-bottom:5px;display:flex;justify-content:space-between}
+.bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--violet-soft),var(--violet));border-radius:6px;transition:.3s}
+.caret{color:var(--ink-soft);transition:.2s;font-size:13px;flex-shrink:0}
+.card.open .caret{transform:rotate(90deg)}
+.money-head{text-align:right;flex-shrink:0;min-width:118px}
+.money-head .big{font-weight:750;font-size:16px}
+.money-head .lil{font-size:11.5px;color:var(--ink-soft)}
+.card-body{display:none;border-top:1px solid var(--line);padding:4px 18px 20px}
+.card.open .card-body{display:block}
+.sec{margin-top:18px}
+.sec > .h{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:8px;justify-content:space-between}
+.grid-meta{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.mi{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.mi .k{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+.mi .v{font-weight:650;margin-top:3px;font-size:14px}
+.scope{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink);white-space:pre-wrap}
+.prog-ctl{display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:12px;flex-wrap:wrap}
+.prog-ctl .toggle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;white-space:nowrap}
+.prog-ctl input[type=range]{flex:1;min-width:120px;accent-color:var(--violet)}
+.prog-ctl .pct{font-weight:750;min-width:44px;text-align:right}
+.switch{position:relative;width:40px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0;position:absolute}
+.switch .sl{position:absolute;inset:0;background:var(--line-strong);border-radius:999px;transition:.2s}
+.switch .sl:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.switch input:checked + .sl{background:var(--violet)}
+.switch input:checked + .sl:before{transform:translateX(18px)}
+.stage{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel-2)}
+.stage .name{flex:1;font-size:14px}
+.stage.done .name{text-decoration:line-through;color:var(--ink-soft)}
+.st-select{width:auto;min-width:128px;padding:6px 9px;font-size:12.5px;font-weight:650}
+.st-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dot-pendente{background:var(--ink-soft)}
+.dot-andamento{background:var(--info)}
+.dot-concluida{background:var(--warn)}
+.dot-entregue{background:var(--ok)}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);font-weight:700;padding:6px 8px;border-bottom:1px solid var(--line)}
+.tbl td{padding:8px;border-bottom:1px solid var(--line)}
+.tbl td.r,.tbl th.r{text-align:right}
+.tbl tr:last-child td{border-bottom:none}
+.pay-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+.pay-tag.pago{background:var(--ok-tint);color:var(--ok)}
+.pay-tag.aberto{background:var(--warn-tint);color:var(--warn)}
+.pay-tag.venc{background:var(--crit-tint);color:var(--crit)}
+.link{background:none;border:none;color:var(--violet);font-weight:650;font-size:13px;padding:0}
+.link:hover{text-decoration:underline}
+.row-actions{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.modal-bg{position:fixed;inset:0;background:rgba(10,7,18,.55);backdrop-filter:blur(3px);display:flex;align-items:flex-start;justify-content:center;padding:30px 16px;z-index:50;overflow:auto}
+.modal{background:var(--panel);border:1px solid var(--line-strong);border-radius:16px;width:100%;max-width:640px;box-shadow:var(--shadow);margin:auto}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.modal-head h2{font-size:17px}
+.modal-body{padding:20px 22px;max-height:70vh;overflow:auto}
+.modal-foot{padding:15px 22px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:650;color:var(--ink-soft);margin-bottom:6px}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row.three{grid-template-columns:1fr 1fr 1fr}
+.close-x{background:none;border:none;font-size:20px;color:var(--ink-soft);line-height:1}
+.dyn-row{display:grid;grid-template-columns:1fr 118px 130px 30px;gap:8px;margin-bottom:8px;align-items:center}
+.dyn-row.stage-row{grid-template-columns:1fr 150px 30px}
+.icon-btn{background:var(--panel-2);border:1px solid var(--line-strong);border-radius:8px;color:var(--ink-soft);width:30px;height:34px;font-size:15px;display:flex;align-items:center;justify-content:center}
+.icon-btn:hover{border-color:var(--crit);color:var(--crit)}
+.add-mini{background:none;border:1px dashed var(--line-strong);border-radius:8px;color:var(--ink-soft);padding:7px;font-size:13px;font-weight:600;width:100%;margin-top:2px}
+.add-mini:hover{border-color:var(--violet);color:var(--violet)}
+.empty{text-align:center;color:var(--ink-soft);padding:50px 20px;font-size:14.5px}
+.foot-note{max-width:1180px;margin:30px auto 0;padding:0 22px;color:var(--ink-soft);font-size:12px}
+.hide-team{}
+body.team .hide-team{display:none !important}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:11px 18px;border-radius:11px;font-size:13.5px;font-weight:600;box-shadow:var(--shadow);z-index:99;opacity:0;transition:.25s}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.err{background:var(--crit);color:#fff}
+.spin{display:inline-block;width:15px;height:15px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:680px){.card-head{flex-wrap:wrap}.prog-wrap{width:100%;order:5}.money-head{text-align:left}.field-row,.field-row.three{grid-template-columns:1fr}.dyn-row{grid-template-columns:1fr 1fr}}
+@media print{.topbar,.toolbar,.prog-ctl,.st-select,.row-actions,.foot-note,.link,.add-mini{display:none !important}.card{break-inside:avoid;box-shadow:none}.card-body{display:block !important}}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate">
+  <div class="gate-card">
+    <div class="brand-dot">F</div>
+    <h1>Controle de Contratos</h1>
+    <div class="sub">Fortis Fortuna Advisors · gestão de contratos ativos</div>
+    <div id="modeTag" class="mode-tag">💾 Modo local</div>
+    <div class="roles">
+      <button class="role-btn" id="btnGestao">
+        <span class="ic">🔐</span>
+        <span><span class="t">Acesso Gestão</span><br><span class="d">Miguel · Fabio · Claudio — visão total (valores + despesas)</span></span>
+      </button>
+      <div class="pw-row" id="pwRow">
+        <input type="email" id="email" placeholder="E-mail da Gestão" autocomplete="username" class="hidden">
+        <input type="password" id="pw" placeholder="Senha" autocomplete="current-password">
+        <button class="btn" id="pwGo">Entrar</button>
+      </div>
+      <button class="role-btn" id="btnEquipe">
+        <span class="ic">👥</span>
+        <span><span class="t">Visão Equipe</span><br><span class="d">Escopo, prazos, progresso e etapas — sem valores</span></span>
+      </button>
+    </div>
+    <div class="err" id="gateErr"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="brand"><span class="bd">F</span> Controle de Contratos</div>
+    <span class="pill-role" id="rolePill">—</span>
+    <span class="pill-mode" id="modePill">Local</span>
+    <div class="spacer"></div>
+    <button class="btn ghost sm" id="themeBtn" title="Alternar tema">🌓</button>
+    <button class="btn ghost sm" id="exportBtn">Backup</button>
+    <button class="btn ghost sm hide-team" id="importBtn">Importar</button>
+    <button class="btn ghost sm" id="printBtn">Imprimir</button>
+    <button class="btn sm hide-team" id="addBtn">+ Novo contrato</button>
+    <button class="btn ghost sm" id="logoutBtn">Sair</button>
+    <input type="file" id="fileIn" accept="application/json" class="hidden">
+  </div>
+  <div class="wrap">
+    <div class="kpis" id="kpis"></div>
+    <div class="toolbar">
+      <div class="search"><span class="mag">🔍</span><input type="text" id="q" placeholder="Buscar contrato ou cliente..."></div>
+      <div class="seg" id="filterSeg">
+        <button data-f="todos" class="active">Todos</button>
+        <button data-f="ativo">Ativos</button>
+        <button data-f="atrasado">Atenção</button>
+        <button data-f="encerrado">Encerrados</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </div>
+  <div class="foot-note" id="footNote"></div>
+</div>
+<div id="modalMount"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   CONFIG — para ativar o MODO NUVEM (link compartilhado + sync),
+   cole a URL e a chave anônima (anon/public) do seu projeto Supabase.
+   Deixe em branco para usar o MODO LOCAL (salva só neste navegador).
+   ============================================================ */
+const CONFIG = {
+  SUPABASE_URL:      "https://eplmfmtsaspwrywytffk.supabase.co",
+  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVwbG1mbXRzYXNwd3J5d3l0ZmZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5OTY2MTYsImV4cCI6MjA5ODU3MjYxNn0.Uxak-0KGQT-hPW2QQuS6Q1yj2vwucjVx2LneNHIPypU",
+  GESTAO_EMAIL:      "gestao@fortunaconsultoria.com.br"
+};
+const CDN="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+const CLOUD = !!(CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY);
+const LS_KEY="fortuna_contratos_v2";
+const LOCAL_PW="fortuna";
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s);
+const fmt=n=>"R$ "+(Number(n)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});
+const uid=()=>"c"+Math.random().toString(36).slice(2,10);
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const parseISO=s=>s?new Date(s+"T00:00:00"):null;
+const brDate=s=>{if(!s)return "—";const d=parseISO(s);return d&&!isNaN(d)?d.toLocaleDateString("pt-BR"):s;};
+const addMonths=(iso,m)=>{const d=parseISO(iso);if(!d)return null;d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10);};
+const addDays=(iso,n)=>{const d=parseISO(iso);if(!d)return null;d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+function toast(msg,isErr){const t=$("#toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",2600);}
+
+const STAGE_STATES=[{v:"pendente",t:"Pendente"},{v:"andamento",t:"Em andamento"},{v:"concluida",t:"Concluída"},{v:"entregue",t:"Entregue"}];
+const STATUS_LABEL={ativo:"Ativo",andamento:"Em andamento",pausado:"Pausado",encerrado:"Encerrado",atrasado:"Pagamento vencido"};
+
+/* ---------- state ---------- */
+let DB=[];            // array de contratos (com .fin quando gestão)
+let ROLE=null;        // 'gestao' | 'team'
+let SESSION=false;    // logado na nuvem (gestão)
+let FILTER="todos", QUERY="";
+let sb=null;          // supabase client
+
+/* ---------- seed (modo local) ---------- */
+function seed(){return [
+  {id:uid(),cliente:"LAVIH SPA — Vila Leopoldina",razao:"A&C SPA LTDA",cnpj:"61.633.043/0001-07",rep:"André Carvalho Yamaya",status:"ativo",
+   dataInicio:"2026-07-02",dataFim:"2027-01-02",dataAssinatura:"2026-07-02",prazoTipo:"meses",prazoValor:6,autoProgresso:true,progressoManual:null,
+   escopo:"Posicionamento em plataformas de IA (GEO/AI Visibility — ChatGPT, Gemini, Meta AI, Perplexity) e captação B2B corporativa. Landing pages, imagens, vídeos e robôs (Vendedor, Marketing, Mídias, Secretária), implantação, integração e treinamento. Regime acelerado (fast-track). Mídia paga por conta do cliente.",
+   obs:"Recorrente R$ 5.000/mês. Rescisão livre, sem multa (via WhatsApp). Custos de mídia paga por conta do cliente.",
+   etapas:[{nome:"Posicionamento IA / GEO (site + conteúdo estruturado)",status:"pendente"},{nome:"Landing pages responsivas",status:"pendente"},{nome:"Imagens e materiais visuais",status:"pendente"},{nome:"Vídeos promocionais / institucionais",status:"pendente"},{nome:"Robô Vendedor (WhatsApp)",status:"pendente"},{nome:"Robô de Marketing (automações/nutrição)",status:"pendente"},{nome:"Robô de Mídias (redes sociais)",status:"pendente"},{nome:"Robô Secretária (agendamentos)",status:"pendente"},{nome:"Implantação, integração e ativação",status:"pendente"},{nome:"Treinamento da equipe",status:"pendente"}],
+   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
+  {id:uid(),cliente:"FENIX Consultoria em Marketing",razao:"FENIX CONSULTORIA EM MARKETING LTDA",cnpj:"37.654.879/0001-03",rep:"Claudio Rodrigo Silva",status:"ativo",
+   dataInicio:"2026-05-08",dataFim:"2026-09-05",dataAssinatura:"2026-05-08",prazoTipo:"dias",prazoValor:120,autoProgresso:true,progressoManual:null,
+   escopo:"3 websites responsivos; vídeos institucionais/promocionais; imagens e materiais visuais; planejamento e execução de campanha de marketing; chatbot integrado ao CRM; implantação; treinamento; planejamento comercial/estratégico; robôs para vendas.",
+   obs:"Assinado digitalmente (gov.br) em 08/05/2026. Prazo: Construção 30d + Implantação, ~120 dias. Rescisão: aviso 15 dias; multa 30% do saldo remanescente.",
+   etapas:[{nome:"3 websites responsivos",status:"pendente"},{nome:"Vídeos institucionais / promocionais",status:"pendente"},{nome:"Imagens e materiais visuais",status:"pendente"},{nome:"Campanha de marketing (planejamento + execução)",status:"pendente"},{nome:"Chatbot integrado ao CRM",status:"pendente"},{nome:"Implantação das soluções",status:"pendente"},{nome:"Treinamento da equipe",status:"pendente"},{nome:"Planejamento comercial / estratégico",status:"pendente"},{nome:"Robôs para vendas",status:"pendente"}],
+   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
+  {id:uid(),cliente:"Dingo Pet — Thaisa Fonseca Simões",razao:"Thaisa Fonseca Simões (Dingo Pet)",cnpj:"",rep:"Thaisa Fonseca Simões",status:"ativo",
+   dataInicio:"2026-07-01",dataFim:"2026-11-01",dataAssinatura:"2026-07-01",prazoTipo:"meses",prazoValor:4,autoProgresso:true,progressoManual:null,
+   escopo:"Desenvolvimento do app Dingo Pet (rede social de pets) para iOS e Android — do escopo à publicação nas lojas. Perfis, feed, comunidades, adoção, dicas do CEO Rocky, conta & segurança. Backend, prototipagem, testes em celular real, blindagem para as lojas e submissão (Google Play + Apple Store).",
+   obs:"Proposta DINGOPROP202607 v2. 4x de R$ 3.125, sem multa por encerramento. Custos de loja (Apple US$99/ano, Google US$25, domínio) por conta da cliente.",
+   etapas:[{nome:"Mês 1 — Escopo & Fundação (protótipo navegável)",status:"pendente"},{nome:"Mês 2 — Núcleo p1 (perfis, feed, login, upload)",status:"pendente"},{nome:"Mês 3 — Núcleo p2 (comunidades, adoção, dicas Rocky, blindagem)",status:"pendente"},{nome:"Mês 4 — Beta & Publicação (testes + submissão lojas)",status:"pendente"}],
+   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
+];}
+
+/* ============================================================
+   STORE — abstrai LOCAL x NUVEM
+   ============================================================ */
+async function ensureSB(){
+  if(sb)return sb;
+  if(!window.supabase){await new Promise((res,rej)=>{const s=document.createElement("script");s.src=CDN;s.onload=res;s.onerror=()=>rej(new Error("Falha ao carregar Supabase (sem internet?)"));document.head.appendChild(s);});}
+  sb=window.supabase.createClient(CONFIG.SUPABASE_URL,CONFIG.SUPABASE_ANON_KEY);
+  return sb;
+}
+/* map linha do banco -> objeto de app */
+function rowToC(r,fin){return {id:r.id,cliente:r.cliente,razao:r.razao,cnpj:r.cnpj,rep:r.rep,status:r.status,
+  dataInicio:r.data_inicio,dataFim:r.data_fim,dataAssinatura:r.data_assinatura,prazoTipo:r.prazo_tipo,prazoValor:r.prazo_valor,
+  escopo:r.escopo,obs:r.obs,etapas:r.etapas||[],autoProgresso:r.auto_progresso!==false,progresso_manual:r.progresso_manual,
+  progressoManual:r.progresso_manual, fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
+function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,rep:c.rep,status:c.status,
+  data_inicio:c.dataInicio||null,data_fim:c.dataFim||null,data_assinatura:c.dataAssinatura||null,prazo_tipo:c.prazoTipo,prazo_valor:c.prazoValor?+c.prazoValor:null,
+  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
+function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
+
+const Store={
+  async init(){
+    if(!CLOUD){ // LOCAL
+      try{const raw=localStorage.getItem(LS_KEY);DB=raw?JSON.parse(raw):seed();}catch(e){DB=seed();}
+      if(!localStorage.getItem(LS_KEY))this.persistLocal();
+      return;
+    }
+    await ensureSB();
+    const {data:{session}}=await sb.auth.getSession();
+    SESSION=!!session;
+    await this.reload();
+    // realtime
+    sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},()=>this.reload().then(render)).subscribe();
+    sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) this.reload().then(render);}).subscribe();
+  },
+  persistLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}},
+  async reload(){
+    if(!CLOUD){return;}
+    const {data:cs,error}=await sb.from("contracts").select("*").order("data_inicio",{ascending:false});
+    if(error)throw error;
+    let finMap={};
+    if(SESSION){
+      const {data:fs}=await sb.from("contract_finance").select("*");
+      (fs||[]).forEach(f=>finMap[f.contract_id]=f);
+    }
+    DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
+  },
+  async saveContract(c,{withFin}={}){
+    if(!CLOUD){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; else DB.push(c); this.persistLocal(); return; }
+    const {error}=await sb.from("contracts").upsert(cToRow(c));
+    if(error)throw error;
+    if(withFin && SESSION){ const {error:e2}=await sb.from("contract_finance").upsert(cToFinRow(c)); if(e2)throw e2; }
+    await this.reload();
+  },
+  async patchContract(c){   // etapas/progresso/status — equipe (anon) pode via UPDATE
+    if(!CLOUD){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; this.persistLocal(); return; }
+    const row=cToRow(c); delete row.id;
+    const {error}=await sb.from("contracts").update(row).eq("id",c.id);
+    if(error)throw error;
+    await this.reload();
+  },
+  async saveFin(c){
+    if(!CLOUD){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; this.persistLocal(); return; }
+    const {error}=await sb.from("contract_finance").upsert(cToFinRow(c)); if(error)throw error; await this.reload();
+  },
+  async remove(id){
+    if(!CLOUD){ DB=DB.filter(x=>x.id!==id); this.persistLocal(); return; }
+    const {error}=await sb.from("contracts").delete().eq("id",id); if(error)throw error; await this.reload();
+  },
+  async replaceAll(arr){
+    if(!CLOUD){ DB=arr; this.persistLocal(); return; }
+    for(const c of arr){ await sb.from("contracts").upsert(cToRow(c)); if(SESSION && c.fin) await sb.from("contract_finance").upsert(cToFinRow(c)); }
+    await this.reload();
+  },
+  async loginGestao(email,pass){
+    if(!CLOUD){ if(pass===LOCAL_PW){SESSION=true;return true;} throw new Error("Senha incorreta."); }
+    await ensureSB();
+    const {error}=await sb.auth.signInWithPassword({email:email||CONFIG.GESTAO_EMAIL,password:pass});
+    if(error)throw new Error("Login inválido: "+error.message);
+    SESSION=true; await this.reload(); return true;
+  },
+  async logout(){ if(CLOUD&&sb&&SESSION){try{await sb.auth.signOut();}catch(e){}} SESSION=false; if(CLOUD)await this.reload(); }
+};
+
+/* ---------- derived ---------- */
+const isDone=st=>st==="concluida"||st==="entregue";
+function autoProgress(c){const es=c.etapas||[];if(!es.length)return 0;return Math.round(es.filter(e=>isDone(e.status)).length/es.length*100);}
+function progress(c){ if(c.autoProgresso===false && c.progressoManual!=null && c.progressoManual!=="") return Math.max(0,Math.min(100,+c.progressoManual)); return autoProgress(c); }
+const getFin=c=>c.fin||{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]};
+function recebido(c){return getFin(c).parcelas.filter(p=>p.pago).reduce((s,p)=>s+(+p.valor||0),0);}
+function aReceber(c){return getFin(c).parcelas.filter(p=>!p.pago).reduce((s,p)=>s+(+p.valor||0),0);}
+function despesaTotal(c){return getFin(c).despesas.reduce((s,d)=>s+(+d.valor||0),0);}
+function temVencido(c){const t=todayISO();return getFin(c).parcelas.some(p=>!p.pago&&p.venc&&p.venc<t);}
+function statusEfetivo(c){
+  if(c.status==="encerrado")return "encerrado";
+  if(c.status==="pausado")return "pausado";
+  if(ROLE==="gestao"&&temVencido(c))return "atrasado";
+  const p=progress(c); if(p>0&&p<100)return "andamento";
+  return c.status||"ativo";
+}
+
+/* ============================================================
+   AUTH UI
+   ============================================================ */
+function refreshModeUI(){
+  const txt = CLOUD ? "☁︎ Modo nuvem (sincronizado)" : "💾 Modo local (só neste navegador)";
+  $("#modeTag").textContent=txt;
+  $("#modePill").textContent = CLOUD ? "☁︎ Nuvem" : "💾 Local";
+  $("#email").classList.toggle("hidden",!CLOUD);
+  if(CLOUD&&CONFIG.GESTAO_EMAIL)$("#email").value=CONFIG.GESTAO_EMAIL;
+}
+$("#btnGestao").onclick=()=>{$("#pwRow").classList.add("show");(CLOUD&&!$("#email").value?$("#email"):$("#pw")).focus();};
+$("#pwGo").onclick=doLogin;
+$("#pw").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
+$("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();});
+async function doLogin(){
+  const btn=$("#pwGo");btn.disabled=true;$("#gateErr").textContent="";
+  try{ await Store.loginGestao($("#email").value.trim(),$("#pw").value); enterUI("gestao"); }
+  catch(e){ $("#gateErr").textContent=e.message||"Falha no login."; $("#pw").select(); }
+  finally{ btn.disabled=false; }
+}
+$("#btnEquipe").onclick=async()=>{ try{ if(CLOUD&&SESSION)await Store.logout(); }catch(e){} enterUI("team"); };
+function enterUI(role){
+  ROLE=role;
+  $("#gate").classList.add("hidden");$("#app").classList.remove("hidden");
+  document.body.classList.toggle("team",role==="team");
+  $("#rolePill").textContent = role==="gestao"?"Gestão · visão total":"Equipe · sem valores";
+  render();
+}
+$("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#pwRow").classList.remove("show");$("#gateErr").textContent=""; };
+
+/* ---------- theme ---------- */
+$("#themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme");const next=cur==="dark"?"light":(cur==="light"?"dark":(matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark"));document.documentElement.setAttribute("data-theme",next);};
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function render(){renderKpis();renderList();renderFoot();}
+
+function renderKpis(){
+  const box=$("#kpis");const ativos=DB.filter(c=>statusEfetivo(c)!=="encerrado");
+  const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
+  const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
+  const kpi=(lab,val,sub,cls="",small=false)=>`<div class="kpi ${cls}"><div class="lab">${lab}</div><div class="val ${small?'small':''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:""}</div>`;
+  let h="";
+  h+=kpi("Contratos ativos",ativos.length,`${DB.length} no total`);
+  h+=kpi("Etapas concluídas",`${etDone}<span style="font-size:14px;color:var(--ink-soft)">/${etTot}</span>`,"entregas marcadas");
+  if(ROLE==="gestao"){
+    const totC=DB.reduce((s,c)=>s+getFin(c).valorTotal,0);
+    const totMes=ativos.reduce((s,c)=>s+getFin(c).valorMensal,0);
+    const totR=DB.reduce((s,c)=>s+recebido(c),0);
+    const totAR=DB.reduce((s,c)=>s+aReceber(c),0);
+    const totD=DB.reduce((s,c)=>s+despesaTotal(c),0);
+    h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent",true);
+    h+=kpi("A receber / mês",fmt(totMes),"recorrente (ativos)","",true);
+    h+=kpi("Recebido",fmt(totR),"parcelas pagas","",true);
+    h+=kpi("A receber",fmt(totAR),"parcelas em aberto","",true);
+    h+=kpi("Despesas",fmt(totD),"custos lançados","",true);
+    h+=kpi("Resultado",fmt(totR-totD),"recebido − despesas","",true);
+  }
+  box.innerHTML=h;
+}
+function renderList(){
+  const list=$("#list");let rows=DB.slice().sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
+  if(QUERY){const q=QUERY.toLowerCase();rows=rows.filter(c=>(c.cliente+" "+(c.razao||"")+" "+(c.escopo||"")).toLowerCase().includes(q));}
+  if(FILTER!=="todos")rows=rows.filter(c=>{const s=statusEfetivo(c);if(FILTER==="ativo")return s!=="encerrado";if(FILTER==="encerrado")return s==="encerrado";if(FILTER==="atrasado")return s==="atrasado"||s==="pausado";return true;});
+  list.innerHTML="";
+  if(!rows.length){list.innerHTML=`<div class="empty">Nenhum contrato encontrado.</div>`;return;}
+  rows.forEach(c=>list.appendChild(cardEl(c)));
+}
+function cardEl(c){
+  const el=document.createElement("div");el.className="card";el.dataset.id=c.id;
+  const s=statusEfetivo(c),p=progress(c);
+  const chip=s==="encerrado"?"encerrado":s==="atrasado"?"atrasado":s==="pausado"?"pausado":s==="andamento"?"andamento":"ativo";
+  const doneN=(c.etapas||[]).filter(e=>isDone(e.status)).length,totN=(c.etapas||[]).length;
+  const money=ROLE==="gestao"?`<div class="money-head hide-team"><div class="big mono">${fmt(getFin(c).valorTotal)}</div><div class="lil">${getFin(c).valorMensal?fmt(getFin(c).valorMensal)+"/mês":"recebido "+fmt(recebido(c))}</div></div>`:"";
+  el.innerHTML=`<div class="card-head">
+      <div class="c-title"><h3>${esc(c.cliente)} <span class="chip ${chip}">${STATUS_LABEL[s]||s}</span></h3>
+        <div class="meta">${c.cnpj?("CNPJ "+esc(c.cnpj)+" · "):""}Início ${brDate(c.dataInicio)} · Término ${brDate(c.dataFim)}</div></div>
+      <div class="prog-wrap"><div class="prog-num"><span>Progresso</span><span>${p}%${totN?` · ${doneN}/${totN}`:""}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>
+      ${money}<span class="caret">▶</span></div>
+    <div class="card-body">${bodyHtml(c)}</div>`;
+  el.querySelector(".card-head").onclick=()=>el.classList.toggle("open");
+  wireBody(el,c);return el;
+}
+function bodyHtml(c){
+  const meta=`<div class="sec"><div class="grid-meta">
+    <div class="mi"><div class="k">Cliente / razão</div><div class="v">${esc(c.razao||c.cliente)}</div></div>
+    <div class="mi"><div class="k">Responsável</div><div class="v">${esc(c.rep||"—")}</div></div>
+    <div class="mi"><div class="k">Data de início</div><div class="v">${brDate(c.dataInicio)}</div></div>
+    <div class="mi"><div class="k">Data de finalização</div><div class="v">${brDate(c.dataFim)}</div></div>
+    <div class="mi"><div class="k">Prazo</div><div class="v">${c.prazoValor?esc(c.prazoValor+" "+c.prazoTipo):"—"}</div></div>
+    <div class="mi"><div class="k">Assinatura</div><div class="v">${brDate(c.dataAssinatura)}</div></div>
+    ${ROLE==="gestao"?`<div class="mi hide-team"><div class="k">Valor total</div><div class="v mono">${fmt(getFin(c).valorTotal)}</div></div>
+      <div class="mi hide-team"><div class="k">A receber / mês</div><div class="v mono">${fmt(getFin(c).valorMensal)}</div></div>`:""}
+  </div></div>`;
+  const escopo=`<div class="sec"><div class="h">Escopo contratado</div><div class="scope">${esc(c.escopo||"—")}</div></div>`;
+  const auto=c.autoProgresso!==false, pv=progress(c);
+  const progCtl=`<div class="prog-ctl">
+    <label class="toggle"><span class="switch"><input type="checkbox" data-auto="${c.id}" ${auto?"checked":""}><span class="sl"></span></span> Automático (pelas etapas)</label>
+    <input type="range" min="0" max="100" step="5" value="${pv}" data-range="${c.id}" ${auto?"disabled":""}>
+    <span class="pct mono">${pv}%</span></div>`;
+  const etapas=`<div class="sec"><div class="h"><span>Etapas / entregas · progresso ${pv}%</span></div>${progCtl}
+    <div class="stages">${(c.etapas||[]).map((e,i)=>stageRow(c,e,i)).join("")||'<div class="scope">Sem etapas cadastradas.</div>'}</div></div>`;
+  let fin="";
+  if(ROLE==="gestao"){
+    fin=`<div class="sec hide-team"><div class="h"><span>Parcelas & recebimentos</span><span class="mono" style="color:var(--ink-soft)">Recebido ${fmt(recebido(c))} · A receber ${fmt(aReceber(c))}</span></div>
+      <table class="tbl"><thead><tr><th>Parcela</th><th>Vencimento</th><th class="r">Valor</th><th class="r">Status</th></tr></thead>
+      <tbody>${getFin(c).parcelas.map((p,i)=>parcelaRow(c,p,i)).join("")||'<tr><td colspan="4" style="color:var(--ink-soft)">Sem parcelas.</td></tr>'}</tbody></table></div>
+    <div class="sec hide-team"><div class="h"><span>Despesas do contrato</span><span class="mono" style="color:var(--ink-soft)">Total ${fmt(despesaTotal(c))}</span></div>
+      <table class="tbl"><thead><tr><th>Descrição</th><th>Data</th><th class="r">Valor</th><th class="r"></th></tr></thead>
+      <tbody>${getFin(c).despesas.map((d,i)=>despRow(c,d,i)).join("")||'<tr><td colspan="4" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table>
+      <button class="add-mini" data-add-desp="${c.id}">+ Lançar despesa</button></div>`;
+  }
+  const obs=c.obs?`<div class="sec"><div class="h">Observações</div><div class="scope">${esc(c.obs)}</div></div>`:"";
+  const actions=ROLE==="gestao"?`<div class="row-actions hide-team">
+      <button class="btn ghost sm" data-edit="${c.id}">✏️ Editar contrato</button>
+      <button class="btn ghost sm" data-dup="${c.id}">Duplicar</button>
+      <button class="btn danger sm" data-del="${c.id}">Excluir</button></div>`:"";
+  return meta+escopo+etapas+fin+obs+actions;
+}
+function stageRow(c,e,i){const done=isDone(e.status);return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>
+  <select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;}
+function parcelaRow(c,p,i){const t=todayISO(),venc=!p.pago&&p.venc&&p.venc<t;const tag=p.pago?`<span class="pay-tag pago">Pago</span>`:venc?`<span class="pay-tag venc">Vencido</span>`:`<span class="pay-tag aberto">Em aberto</span>`;
+  return `<tr><td>${esc(p.label||("Parcela "+(i+1)))}</td><td>${brDate(p.venc)}</td><td class="r mono">${fmt(p.valor)}</td><td class="r">${tag} <button class="link" data-pay="${c.id}:${i}">${p.pago?"desmarcar":"marcar pago"}</button></td></tr>`;}
+function despRow(c,d,i){return `<tr><td>${esc(d.desc||"—")}</td><td>${brDate(d.data)}</td><td class="r mono">${fmt(d.valor)}</td><td class="r"><button class="link" style="color:var(--crit)" data-deldesp="${c.id}:${i}">remover</button></td></tr>`;}
+
+function wireBody(el,c){
+  el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
+    const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
+    try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
+  el.querySelectorAll("[data-auto]").forEach(chk=>chk.onchange=async ev=>{ev.stopPropagation();
+    const ct=DB.find(x=>x.id===chk.dataset.auto);ct.autoProgresso=chk.checked;if(chk.checked)ct.progressoManual=null;else if(ct.progressoManual==null)ct.progressoManual=progress(ct);
+    try{await Store.patchContract(ct);softRefresh(ct.id);renderKpis();}catch(e){toast("Erro ao salvar",true);}});
+  el.querySelectorAll("[data-range]").forEach(rg=>{
+    rg.oninput=ev=>{ev.stopPropagation();const pct=rg.parentElement.querySelector(".pct");if(pct)pct.textContent=rg.value+"%";const bar=el.querySelector(".bar > i");if(bar)bar.style.width=rg.value+"%";};
+    rg.onchange=async ev=>{ev.stopPropagation();const ct=DB.find(x=>x.id===rg.dataset.range);ct.autoProgresso=false;ct.progressoManual=+rg.value;
+      try{await Store.patchContract(ct);softRefresh(ct.id);renderKpis();}catch(e){toast("Erro ao salvar progresso",true);}};
+  });
+  el.querySelectorAll("[data-pay]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const[id,i]=b.dataset.pay.split(":");const ct=DB.find(x=>x.id===id);
+    ct.fin.parcelas[+i].pago=!ct.fin.parcelas[+i].pago;try{await Store.saveFin(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar pagamento",true);}});
+  el.querySelectorAll("[data-deldesp]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const[id,i]=b.dataset.deldesp.split(":");const ct=DB.find(x=>x.id===id);
+    ct.fin.despesas.splice(+i,1);try{await Store.saveFin(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao remover",true);}});
+  const addD=el.querySelector("[data-add-desp]");if(addD)addD.onclick=ev=>{ev.stopPropagation();despesaModal(c.id);};
+  const ed=el.querySelector("[data-edit]");if(ed)ed.onclick=ev=>{ev.stopPropagation();contractModal(c.id);};
+  const dp=el.querySelector("[data-dup]");if(dp)dp.onclick=async ev=>{ev.stopPropagation();const copy=JSON.parse(JSON.stringify(c));copy.id=uid();copy.cliente=c.cliente+" (cópia)";
+    try{await Store.saveContract(copy,{withFin:true});render();toast("Contrato duplicado");}catch(e){toast("Erro ao duplicar",true);}};
+  const dl=el.querySelector("[data-del]");if(dl)dl.onclick=async ev=>{ev.stopPropagation();if(confirm('Excluir o contrato "'+c.cliente+'"? Esta ação não pode ser desfeita.')){
+    try{await Store.remove(c.id);render();toast("Contrato excluído");}catch(e){toast("Erro ao excluir",true);}}};
+}
+function softRefresh(id){const c=DB.find(x=>x.id===id);if(!c)return;const old=document.querySelector(`.card[data-id="${id}"]`);if(!old)return;const wasOpen=old.classList.contains("open");const neu=cardEl(c);if(wasOpen)neu.classList.add("open");old.replaceWith(neu);}
+
+/* ============================================================
+   MODAIS
+   ============================================================ */
+function contractModal(id){
+  const editing=!!id;
+  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}};
+  if(!c.fin)c.fin={valorTotal:"",valorMensal:"",parcelas:[],despesas:[]};
+  const m=document.createElement("div");m.className="modal-bg";
+  m.innerHTML=`<div class="modal"><div class="modal-head"><h2>${editing?"Editar contrato":"Novo contrato"}</h2><button class="close-x" data-x>×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Cliente (nome de exibição)</label><input id="f-cliente" value="${esc(c.cliente)}" placeholder="Ex.: LAVIH SPA — Vila Leopoldina"></div>
+      <div class="field-row"><div class="field"><label>Razão social</label><input id="f-razao" value="${esc(c.razao)}"></div><div class="field"><label>CNPJ</label><input id="f-cnpj" value="${esc(c.cnpj)}"></div></div>
+      <div class="field-row"><div class="field"><label>Responsável / contato</label><input id="f-rep" value="${esc(c.rep)}"></div>
+        <div class="field"><label>Status</label><select id="f-status">${["ativo","pausado","encerrado"].map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${STATUS_LABEL[s]}</option>`).join("")}</select></div></div>
+      <div class="field-row three"><div class="field"><label>Data de início</label><input type="date" id="f-ini" value="${c.dataInicio||""}"></div>
+        <div class="field"><label>Data de finalização</label><input type="date" id="f-fim" value="${c.dataFim||""}"></div>
+        <div class="field"><label>Assinatura</label><input type="date" id="f-ass" value="${c.dataAssinatura||""}"></div></div>
+      <div class="field-row"><div class="field"><label>Prazo</label><div style="display:flex;gap:8px"><input type="number" id="f-prazoV" value="${c.prazoValor}" style="flex:1" placeholder="6"><select id="f-prazoT" style="width:110px"><option value="meses" ${c.prazoTipo==="meses"?"selected":""}>meses</option><option value="dias" ${c.prazoTipo==="dias"?"selected":""}>dias</option></select></div><div style="font-size:11.5px;color:var(--ink-soft);margin-top:5px">Se a data de finalização ficar vazia, calculo pelo início + prazo.</div></div>
+        <div class="field"><label>Valor total (R$)</label><input type="number" step="0.01" id="f-valor" value="${c.fin.valorTotal}"></div></div>
+      <div class="field-row"><div class="field"><label>Valor a receber mensal (R$)</label><input type="number" step="0.01" id="f-mensal" value="${c.fin.valorMensal}" placeholder="ex.: 5000 (recorrente)"></div>
+        <div class="field"><label>&nbsp;</label><button class="add-mini" id="genParc" type="button" style="margin-top:0">⚙︎ Gerar parcelas automaticamente</button></div></div>
+      <div class="field"><label>Escopo contratado</label><textarea id="f-escopo" rows="4">${esc(c.escopo)}</textarea></div>
+      <div class="field"><label>Etapas / entregas</label><div id="stagesWrap"></div><button class="add-mini" id="addStage" type="button">+ Adicionar etapa</button></div>
+      <div class="field"><label>Parcelas ${ROLE==="gestao"?"":"(somente Gestão)"}</label><div id="parcWrap"></div><button class="add-mini" id="addParc" type="button">+ Adicionar parcela</button></div>
+      <div class="field"><label>Observações</label><textarea id="f-obs" rows="2">${esc(c.obs)}</textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-x>Cancelar</button><button class="btn" id="saveC">${editing?"Salvar alterações":"Criar contrato"}</button></div></div>`;
+  $("#modalMount").appendChild(m);
+  const stagesWrap=m.querySelector("#stagesWrap"),parcWrap=m.querySelector("#parcWrap");
+  const drawStages=()=>{stagesWrap.innerHTML=c.etapas.map((e,i)=>`<div class="dyn-row stage-row"><input value="${esc(e.nome)}" data-sn="${i}" placeholder="Nome da etapa"><select data-ss="${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select><button class="icon-btn" type="button" data-rs="${i}">🗑</button></div>`).join("");wireDyn();};
+  const drawParc=()=>{parcWrap.innerHTML=c.fin.parcelas.map((p,i)=>`<div class="dyn-row"><input value="${esc(p.label)}" data-pn="${i}" placeholder="Ex.: 1ª parcela"><input type="number" step="0.01" value="${p.valor}" data-pv="${i}" placeholder="Valor"><input type="date" value="${p.venc||""}" data-pd="${i}"><button class="icon-btn" type="button" data-rp="${i}">🗑</button></div>`).join("");wireDyn();};
+  function wireDyn(){
+    stagesWrap.querySelectorAll("[data-sn]").forEach(el=>el.oninput=()=>c.etapas[+el.dataset.sn].nome=el.value);
+    stagesWrap.querySelectorAll("[data-ss]").forEach(el=>el.onchange=()=>c.etapas[+el.dataset.ss].status=el.value);
+    stagesWrap.querySelectorAll("[data-rs]").forEach(el=>el.onclick=()=>{c.etapas.splice(+el.dataset.rs,1);drawStages();});
+    parcWrap.querySelectorAll("[data-pn]").forEach(el=>el.oninput=()=>c.fin.parcelas[+el.dataset.pn].label=el.value);
+    parcWrap.querySelectorAll("[data-pv]").forEach(el=>el.oninput=()=>c.fin.parcelas[+el.dataset.pv].valor=+el.value);
+    parcWrap.querySelectorAll("[data-pd]").forEach(el=>el.onchange=()=>c.fin.parcelas[+el.dataset.pd].venc=el.value);
+    parcWrap.querySelectorAll("[data-rp]").forEach(el=>el.onclick=()=>{c.fin.parcelas.splice(+el.dataset.rp,1);drawParc();});
+  }
+  drawStages();drawParc();
+  m.querySelector("#addStage").onclick=()=>{c.etapas.push({nome:"",status:"pendente"});drawStages();};
+  m.querySelector("#addParc").onclick=()=>{c.fin.parcelas.push({label:(c.fin.parcelas.length+1)+"ª parcela",valor:"",venc:"",pago:false});drawParc();};
+  m.querySelector("#genParc").onclick=()=>{const total=+m.querySelector("#f-valor").value||0;const n=parseInt(prompt("Quantas parcelas?","4"),10);if(!n||n<1)return;const ini=m.querySelector("#f-ini").value||m.querySelector("#f-ass").value||todayISO();const each=Math.round(total/n*100)/100;c.fin.parcelas=Array.from({length:n},(_,i)=>({label:(i+1)+"ª parcela",valor:each,venc:addMonths(ini,i),pago:false}));drawParc();};
+  m.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>m.remove());
+  m.onclick=e=>{if(e.target===m)m.remove();};
+  m.querySelector("#saveC").onclick=async()=>{
+    c.cliente=m.querySelector("#f-cliente").value.trim()||"(sem nome)";
+    c.razao=m.querySelector("#f-razao").value.trim();c.cnpj=m.querySelector("#f-cnpj").value.trim();c.rep=m.querySelector("#f-rep").value.trim();
+    c.status=m.querySelector("#f-status").value;
+    c.dataInicio=m.querySelector("#f-ini").value;c.dataFim=m.querySelector("#f-fim").value;c.dataAssinatura=m.querySelector("#f-ass").value;
+    c.prazoValor=m.querySelector("#f-prazoV").value;c.prazoTipo=m.querySelector("#f-prazoT").value;
+    c.escopo=m.querySelector("#f-escopo").value.trim();c.obs=m.querySelector("#f-obs").value.trim();
+    c.fin.valorTotal=+m.querySelector("#f-valor").value||0;c.fin.valorMensal=+m.querySelector("#f-mensal").value||0;
+    if(!c.dataFim&&c.dataInicio&&c.prazoValor)c.dataFim=c.prazoTipo==="dias"?addDays(c.dataInicio,+c.prazoValor):addMonths(c.dataInicio,+c.prazoValor);
+    const btn=m.querySelector("#saveC");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando';
+    try{await Store.saveContract(c,{withFin:true});m.remove();render();toast(editing?"Contrato atualizado":"Contrato criado");}
+    catch(e){btn.disabled=false;btn.textContent="Salvar";toast("Erro ao salvar: "+(e.message||""),true);}
+  };
+}
+function despesaModal(id){
+  const m=document.createElement("div");m.className="modal-bg";
+  m.innerHTML=`<div class="modal" style="max-width:440px"><div class="modal-head"><h2>Lançar despesa</h2><button class="close-x" data-x>×</button></div>
+    <div class="modal-body"><div class="field"><label>Descrição</label><input id="d-desc" placeholder="Ex.: mídia paga, licença, freelancer"></div>
+    <div class="field-row"><div class="field"><label>Valor (R$)</label><input type="number" step="0.01" id="d-val"></div><div class="field"><label>Data</label><input type="date" id="d-data" value="${todayISO()}"></div></div></div>
+    <div class="modal-foot"><button class="btn ghost" data-x>Cancelar</button><button class="btn" id="d-save">Adicionar</button></div></div>`;
+  $("#modalMount").appendChild(m);
+  m.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>m.remove());m.onclick=e=>{if(e.target===m)m.remove();};
+  m.querySelector("#d-save").onclick=async()=>{const c=DB.find(x=>x.id===id);c.fin=c.fin||{parcelas:[],despesas:[]};c.fin.despesas=c.fin.despesas||[];
+    c.fin.despesas.push({desc:m.querySelector("#d-desc").value.trim()||"Despesa",valor:+m.querySelector("#d-val").value||0,data:m.querySelector("#d-data").value});
+    try{await Store.saveFin(c);m.remove();softRefresh(id);renderKpis();toast("Despesa lançada");}catch(e){toast("Erro ao salvar despesa",true);}};
+}
+
+/* ============================================================
+   TOOLBAR
+   ============================================================ */
+$("#addBtn").onclick=()=>contractModal(null);
+$("#q").oninput=e=>{QUERY=e.target.value;renderList();};
+$("#filterSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>{FILTER=b.dataset.f;$("#filterSeg").querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===b));renderList();});
+$("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup-contratos-fortuna-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);};
+$("#importBtn").onclick=()=>$("#fileIn").click();
+$("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
+$("#printBtn").onclick=()=>window.print();
+function renderFoot(){$("#footNote").innerHTML=ROLE==="gestao"?(CLOUD?"Modo nuvem — dados sincronizados no Supabase. Valores e pagamentos ficam numa tabela protegida (a equipe não recebe esses dados).":"Modo local — dados salvos neste navegador. Use <b>Backup</b> para gerar arquivo e <b>Importar</b> para restaurar. Nenhum pagamento foi presumido — marque os pagos."):"Visão Equipe — valores e pagamentos ocultos. Marque as etapas e ajuste o progresso conforme o andamento.";}
+
+/* ============================================================
+   BOOT
+   ============================================================ */
+(async function boot(){
+  refreshModeUI();
+  try{ await Store.init(); }
+  catch(e){ $("#gateErr").textContent="Aviso: "+(e.message||"falha ao conectar. Verifique a configuração do Supabase."); }
+})();
+</script>
+</body>
+</html>
