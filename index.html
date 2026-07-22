@@ -42,22 +42,29 @@ h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance;font-family:"Montserr
 .kpi.accent{background:linear-gradient(135deg,#7C4DFF,#5A2CC9 55%,#231152);box-shadow:0 14px 34px -12px color-mix(in srgb,var(--violet) 65%,transparent)}
 .wordmark{font-family:"Montserrat",sans-serif;font-weight:800;letter-spacing:.02em}
 .wordmark b{color:var(--violet)}
-/* ===== tela de acesso: cena tech/IA ===== */
+/* ===== tela de acesso (clara, command-center) ===== */
 #bgfx{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
-.gate{background:radial-gradient(130% 90% at 50% -10%, #1a1038 0%, #0b0618 55%, #070410 100%)}
+.gate{background:radial-gradient(120% 90% at 50% -10%, #F1EBFF 0%, #F7F6FB 55%, #EEEAF8 100%)}
 .gate::before{display:none}
-.gate-card{position:relative;z-index:2;background:rgba(20,13,40,.58);border:1px solid rgba(157,123,255,.30);box-shadow:0 30px 90px -24px rgba(109,59,245,.55), inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(16px) saturate(1.2);color:#F3F0FA}
-.gate h1{color:#fff}
-.gate .sub{color:#B6ABD6}
-.gate .eyebrow{color:#B399FF}
-.gate .mode-tag{background:rgba(255,255,255,.05);border-color:rgba(157,123,255,.28);color:#c9bff0}
-.gate .role-btn{background:rgba(255,255,255,.035);border-color:rgba(157,123,255,.22);color:#EDE9FA}
-.gate .role-btn:hover{border-color:#9D7BFF;background:rgba(157,123,255,.13)}
-.gate .role-btn .t{color:#F3F0FA}
-.gate .role-btn .d{color:#A99FCB}
-.gate input{background:rgba(255,255,255,.06);border-color:rgba(157,123,255,.28);color:#fff}
-.gate input::placeholder{color:#9a90ba}
-.gate .err{color:#FF8b8b}
+.gate-card{position:relative;z-index:2;background:rgba(255,255,255,.82);backdrop-filter:blur(14px) saturate(1.1);border:1px solid rgba(109,59,245,.14);box-shadow:0 24px 70px -26px rgba(109,59,245,.32), 0 2px 10px rgba(25,21,38,.05)}
+/* facepile da equipe */
+.gate-team{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+.gate-team-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:7px;justify-content:center}
+.gate-avatars{display:flex;flex-wrap:wrap;justify-content:center;gap:0}
+.gate-avatars .ga{width:38px;height:38px;border-radius:50%;border:2px solid #fff;margin-left:-9px;background:var(--violet-tint);color:var(--violet);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;overflow:hidden;font-family:"Montserrat",sans-serif;box-shadow:0 2px 7px rgba(25,21,38,.14);transition:transform .15s ease}
+.gate-avatars .ga:first-child{margin-left:0}
+.gate-avatars .ga:hover{transform:translateY(-3px) scale(1.06);z-index:3}
+.gate-avatars .ga img{width:100%;height:100%;object-fit:cover}
+.gate-avatars .ga.more{background:var(--violet);color:#fff;font-size:12px}
+/* nuvem viva */
+.cloud-dot{width:8px;height:8px;border-radius:50%;background:var(--ink-soft);display:inline-block;flex-shrink:0}
+.mode-tag.cloud-on{border-color:rgba(18,161,80,.35);color:#0b7a3e;background:rgba(18,161,80,.10)}
+.mode-tag.cloud-on .cloud-dot{background:#12A150;animation:pulseDot 1.8s infinite}
+.mode-tag.cloud-off{border-color:rgba(214,47,47,.30);color:var(--crit);background:var(--crit-tint)}
+.mode-tag.cloud-off .cloud-dot{background:var(--crit)}
+#gate .mode-tag{animation:floaty 3.4s ease-in-out infinite}
+@keyframes pulseDot{0%{box-shadow:0 0 0 0 rgba(18,161,80,.5)}70%{box-shadow:0 0 0 7px rgba(18,161,80,0)}100%{box-shadow:0 0 0 0 rgba(18,161,80,0)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
 button{font-family:inherit;cursor:pointer}
 .mono{font-variant-numeric:tabular-nums}
 .hidden{display:none !important}
@@ -307,6 +314,7 @@ body.team .hide-team{display:none !important}
       </button>
     </div>
     <div class="err" id="gateErr"></div>
+    <div id="gateTeam" class="gate-team"></div>
   </div>
 </div>
 
@@ -386,6 +394,7 @@ let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="todos", QUERY="";
 let sb=null;          // supabase client
 let lastLocalWrite=0; // guarda p/ evitar que o realtime da própria escrita atropele a UI
+let CONNECTED=false;  // status da conexão em tempo real (nuvem viva)
 
 /* ---------- seed (modo local) ---------- */
 function seed(){return [
@@ -483,7 +492,7 @@ const Store={
     await this.reload();
     // realtime — só reage a mudanças de OUTROS usuários (ignora o eco da própria escrita)
     const fromOthers=()=>{ if(Date.now()-lastLocalWrite>2500) this.reload().then(render).catch(()=>{}); };
-    sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},fromOthers).subscribe();
+    sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},fromOthers).subscribe((st)=>{ CONNECTED=(st==="SUBSCRIBED"); updateCloud(); });
     sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) fromOthers(); }).subscribe();
     sb.channel("rt-desp").on("postgres_changes",{event:"*",schema:"public",table:"despesas_fixas"},()=>{ if(SESSION) fromOthers(); }).subscribe();
     sb.channel("rt-mem").on("postgres_changes",{event:"*",schema:"public",table:"membros"},fromOthers).subscribe();
@@ -600,10 +609,24 @@ function statusEfetivo(c){
 /* ============================================================
    AUTH UI
    ============================================================ */
+function updateCloud(){
+  const el=$("#modeTag");
+  if(el){
+    if(!CLOUD){ el.className="mode-tag"; el.innerHTML="💾 Modo local"; }
+    else{ const on=CONNECTED&&navigator.onLine; el.className="mode-tag "+(on?"cloud-on":"cloud-off"); el.innerHTML='<span class="cloud-dot"></span> '+(on?"Nuvem conectada":"Reconectando..."); }
+  }
+  const pill=$("#modePill");
+  if(pill) pill.textContent = !CLOUD?"💾 Local":((CONNECTED&&navigator.onLine)?"☁︎ Conectado":"☁︎ Offline");
+}
+function renderGateTeam(){
+  const el=$("#gateTeam"); if(!el)return;
+  const membros=MEMBROS.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  if(!membros.length){ el.innerHTML=""; return; }
+  const shown=membros.slice(0,9);
+  el.innerHTML=`<div class="gate-team-label">👥 Equipe · ${membros.length}</div><div class="gate-avatars">${shown.map(m=>`<span class="ga" title="${esc(m.nome)}">${m.foto?`<img src="${esc(m.foto)}" alt="">`:esc(iniciais(m.nomeCompleto||m.nome))}</span>`).join("")}${membros.length>shown.length?`<span class="ga more">+${membros.length-shown.length}</span>`:""}</div>`;
+}
 function refreshModeUI(){
-  const txt = CLOUD ? "☁︎ Modo nuvem (sincronizado)" : "💾 Modo local (só neste navegador)";
-  $("#modeTag").textContent=txt;
-  $("#modePill").textContent = CLOUD ? "☁︎ Nuvem" : "💾 Local";
+  updateCloud();
   $("#email").classList.toggle("hidden",!CLOUD);
   if(CLOUD&&CONFIG.GESTAO_EMAIL)$("#email").value=CONFIG.GESTAO_EMAIL;
 }
@@ -635,7 +658,7 @@ document.documentElement.setAttribute("data-theme","light");
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){renderKpis();renderDesp();renderMembros();renderAtrib();renderList();renderFoot();}
+function render(){renderKpis();renderDesp();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();}
 
 let ATRIB_MEMBRO="todos";
 function stageLabel(v){const s=STAGE_STATES.find(x=>x.v===v);return s?s.t:v;}
@@ -1061,7 +1084,7 @@ window.BGFX=(function(){
   let W=0,H=0,nodes=[],pulses=[],raf=null,running=false;
   const reduce=matchMedia("(prefers-reduced-motion:reduce)").matches;
   function resize(){const r=canvas.getBoundingClientRect();W=canvas.width=Math.max(1,Math.round(r.width*DPR));H=canvas.height=Math.max(1,Math.round(r.height*DPR));}
-  function build(){resize();const count=Math.max(26,Math.min(78,Math.floor((W*H)/(26000*DPR))));
+  function build(){resize();const count=Math.max(20,Math.min(52,Math.floor((W*H)/(38000*DPR))));
     nodes=Array.from({length:count},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*0.16*DPR,vy:(Math.random()-.5)*0.16*DPR,r:(Math.random()*1.5+0.7)*DPR}));pulses=[];}
   const MAXD=()=>150*DPR;
   function spawnPulse(){if(pulses.length>10||!nodes.length)return;const i=(Math.random()*nodes.length)|0,a=nodes[i];let best=-1,bd=MAXD();
@@ -1072,11 +1095,11 @@ window.BGFX=(function(){
     for(const n of nodes){n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;}
     const md=MAXD();
     for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const a=nodes[i],b=nodes[j],d=Math.hypot(a.x-b.x,a.y-b.y);
-      if(d<md){const o=1-d/md;ctx.strokeStyle="rgba(140,99,255,"+(o*0.42)+")";ctx.lineWidth=DPR*0.7;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
-    for(const n of nodes){const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*7);g.addColorStop(0,"rgba(170,140,255,0.85)");g.addColorStop(1,"rgba(170,140,255,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r*7,0,TAU);ctx.fill();
-      ctx.fillStyle="rgba(224,212,255,0.95)";ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,TAU);ctx.fill();}
+      if(d<md){const o=1-d/md;ctx.strokeStyle="rgba(109,59,245,"+(o*0.26)+")";ctx.lineWidth=DPR*0.8;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}
+    for(const n of nodes){const g=ctx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r*6);g.addColorStop(0,"rgba(124,77,255,0.34)");g.addColorStop(1,"rgba(124,77,255,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(n.x,n.y,n.r*6,0,TAU);ctx.fill();
+      ctx.fillStyle="rgba(109,59,245,0.85)";ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,TAU);ctx.fill();}
     for(let k=pulses.length-1;k>=0;k--){const p=pulses[k];p.t+=p.sp;const a=nodes[p.a],b=nodes[p.b];if(!a||!b||p.t>=1){pulses.splice(k,1);continue;}
-      const x=a.x+(b.x-a.x)*p.t,y=a.y+(b.y-a.y)*p.t,g=ctx.createRadialGradient(x,y,0,x,y,5*DPR);g.addColorStop(0,"rgba(120,220,255,0.95)");g.addColorStop(1,"rgba(120,220,255,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,5*DPR,0,TAU);ctx.fill();}
+      const x=a.x+(b.x-a.x)*p.t,y=a.y+(b.y-a.y)*p.t,g=ctx.createRadialGradient(x,y,0,x,y,5.5*DPR);g.addColorStop(0,"rgba(46,123,196,0.95)");g.addColorStop(1,"rgba(46,123,196,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,5.5*DPR,0,TAU);ctx.fill();}
     if(Math.random()<0.06)spawnPulse();
     raf=requestAnimationFrame(frame);
   }
@@ -1089,8 +1112,12 @@ window.BGFX=(function(){
 (async function boot(){
   refreshModeUI();
   try{ window.BGFX.start(); }catch(e){}
+  window.addEventListener("online",updateCloud);
+  window.addEventListener("offline",updateCloud);
   try{ await Store.init(); }
   catch(e){ $("#gateErr").textContent="Aviso: "+(e.message||"falha ao conectar. Verifique a configuração do Supabase."); }
+  if(!CLOUD)CONNECTED=true;
+  renderGateTeam(); updateCloud();
 })();
 </script>
 </body>
