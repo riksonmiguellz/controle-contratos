@@ -717,8 +717,10 @@ function renderKpis(){
   const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
   const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
   const kpi=(lab,val,sub,cls="",small=false)=>`<div class="kpi ${cls}"><div class="lab">${lab}</div><div class="val ${small?'small':''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:""}</div>`;
+  const emNeg=DB.filter(c=>statusEfetivo(c)==="negociacao").length;
   let h="";
   h+=kpi("Contratos ativos",ativos.length,`${DB.length} no total`);
+  h+=kpi("Em negociação",emNeg,"no funil de fechamento");
   h+=kpi("Etapas concluídas",`${etDone}<span style="font-size:14px;color:var(--ink-soft)">/${etTot}</span>`,"entregas marcadas");
   if(ROLE==="gestao"){
     const totC=DB.reduce((s,c)=>s+getFin(c).valorTotal,0);
