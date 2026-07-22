@@ -198,12 +198,12 @@ body.team .hide-team{display:none !important}
     <div class="brand-dot">F</div>
     <div class="eyebrow">Fortuna AI Advisors</div>
     <h1>Controle de Contratos</h1>
-    <div class="sub">Gestão dos contratos ativos · visão total &amp; visão equipe</div>
+    <div class="sub">Acompanhamento de contratos, prazos e entregas.</div>
     <div id="modeTag" class="mode-tag">💾 Modo local</div>
     <div class="roles">
       <button class="role-btn" id="btnGestao">
         <span class="ic">🔐</span>
-        <span><span class="t">Acesso Gestão</span><br><span class="d">Miguel · Fabio · Claudio — visão total (valores + despesas)</span></span>
+        <span><span class="t">Acesso Gestão</span><br><span class="d">Miguel · Fabio · Claudio</span></span>
       </button>
       <div class="pw-row" id="pwRow">
         <input type="email" id="email" placeholder="E-mail da Gestão" autocomplete="username" class="hidden">
@@ -212,7 +212,7 @@ body.team .hide-team{display:none !important}
       </div>
       <button class="role-btn" id="btnEquipe">
         <span class="ic">👥</span>
-        <span><span class="t">Visão Equipe</span><br><span class="d">Escopo, prazos, progresso e etapas — sem valores</span></span>
+        <span><span class="t">Acesso Equipe</span><br><span class="d">Escopo, prazos, progresso e etapas</span></span>
       </button>
     </div>
     <div class="err" id="gateErr"></div>
@@ -479,7 +479,7 @@ function enterUI(role){
   ROLE=role;
   $("#gate").classList.add("hidden");$("#app").classList.remove("hidden");
   document.body.classList.toggle("team",role==="team");
-  $("#rolePill").textContent = role==="gestao"?"Gestão · visão total":"Equipe · sem valores";
+  $("#rolePill").textContent = role==="gestao"?"Gestão":"Equipe";
   render();
 }
 $("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#pwRow").classList.remove("show");$("#gateErr").textContent=""; };
@@ -747,7 +747,7 @@ $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
 $("#printBtn").onclick=()=>window.print();
 function renderFoot(){
-  const msg=ROLE==="gestao"?(CLOUD?"Modo nuvem — dados sincronizados no Supabase. Valores e pagamentos ficam numa tabela protegida (a equipe não recebe esses dados).":"Modo local — dados salvos neste navegador. Use <b>Backup</b> para gerar arquivo e <b>Importar</b> para restaurar. Nenhum pagamento foi presumido — marque os pagos."):"Visão Equipe — valores e pagamentos ocultos. Marque as etapas e ajuste o progresso conforme o andamento.";
+  const msg=ROLE==="gestao"?(CLOUD?"Modo nuvem — dados sincronizados no Supabase. Valores e pagamentos ficam numa tabela protegida (a equipe não recebe esses dados).":"Modo local — dados salvos neste navegador. Use <b>Backup</b> para gerar arquivo e <b>Importar</b> para restaurar. Nenhum pagamento foi presumido — marque os pagos."):"Marque as etapas e ajuste o progresso conforme o andamento das entregas.";
   $("#footNote").innerHTML=`<span class="wordmark">Fortuna<b>&nbsp;AI</b> Advisors</span> · Controle de Contratos &nbsp;—&nbsp; ${msg}`;
 }
 
