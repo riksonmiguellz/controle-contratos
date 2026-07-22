@@ -140,8 +140,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .switch .sl:before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
 .switch input:checked + .sl{background:var(--violet)}
 .switch input:checked + .sl:before{transform:translateX(18px)}
-.stage{display:flex;align-items:center;gap:11px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel-2)}
-.stage .name{flex:1;font-size:14px}
+.stage{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel-2);flex-wrap:wrap}
+.stage .name{flex:1;min-width:160px;font-size:14px}
+.resp-sel{min-width:150px;color:var(--violet)}
+.resp-chip{font-size:12px;font-weight:650;padding:4px 10px;border-radius:999px;background:var(--violet-tint);color:var(--violet);white-space:nowrap}
+.resp-chip.vazio{background:var(--line);color:var(--ink-soft);font-weight:500}
+.mem-list{display:flex;flex-direction:column;gap:8px}
+.mem-ro{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:14px}
+.mem-ro b{font-weight:700}
+.mem-ro span{color:var(--ink-soft)}
 .stage.done .name{text-decoration:line-through;color:var(--ink-soft)}
 .st-select{width:auto;min-width:128px;padding:6px 9px;font-size:12.5px;font-weight:650}
 .st-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
@@ -235,6 +242,7 @@ body.team .hide-team{display:none !important}
   <div class="wrap">
     <div class="kpis" id="kpis"></div>
     <div id="despWrap" class="hide-team"></div>
+    <div id="membrosWrap"></div>
     <div class="toolbar">
       <div class="search"><span class="mag">🔍</span><input type="text" id="q" placeholder="Buscar contrato ou cliente..."></div>
       <div class="seg" id="filterSeg">
@@ -286,6 +294,7 @@ const STATUS_LABEL={ativo:"Ativo",andamento:"Em andamento",pausado:"Pausado",enc
 /* ---------- state ---------- */
 let DB=[];            // array de contratos (com .fin quando gestão)
 let DESP=[];          // despesas fixas mensais (só gestão)
+let MEMBROS=[];       // equipe / responsáveis (visível a todos)
 let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="todos", QUERY="";
@@ -334,6 +343,15 @@ function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,r
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
 function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
 function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
+function rowToM(r){return {id:r.id,nome:r.nome,funcao:r.funcao||"",ordem:r.ordem||0};}
+function mToRow(m){return {id:m.id,nome:m.nome||"",funcao:m.funcao||"",ordem:m.ordem||0};}
+function seedMembros(){return [
+  {id:"m1",nome:"Felipe",funcao:"a definir",ordem:1},
+  {id:"m2",nome:"Anderson",funcao:"a definir",ordem:2},
+  {id:"m3",nome:"Daniel",funcao:"a definir",ordem:3},
+  {id:"m4",nome:"Matheus",funcao:"a definir",ordem:4},
+  {id:"m5",nome:"Cláudio",funcao:"a definir",ordem:5},
+];}
 function seedDesp(){return [
   {id:"d1",nome:"Felipe",valor:2500,recorrencia:"mensal",categoria:"Equipe",ordem:1},
   {id:"d2",nome:"Anderson",valor:1000,recorrencia:"mensal",categoria:"Equipe",ordem:2},
@@ -351,6 +369,8 @@ const Store={
       if(!localStorage.getItem(LS_KEY))this.persistLocal();
       try{const rd=localStorage.getItem(LS_KEY+"_desp");DESP=rd?JSON.parse(rd):seedDesp();}catch(e){DESP=seedDesp();}
       if(!localStorage.getItem(LS_KEY+"_desp"))this.persistDesp();
+      try{const rm=localStorage.getItem(LS_KEY+"_mem");MEMBROS=rm?JSON.parse(rm):seedMembros();}catch(e){MEMBROS=seedMembros();}
+      if(!localStorage.getItem(LS_KEY+"_mem"))this.persistMem();
       return;
     }
     await ensureSB();
@@ -362,9 +382,11 @@ const Store={
     sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},fromOthers).subscribe();
     sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) fromOthers(); }).subscribe();
     sb.channel("rt-desp").on("postgres_changes",{event:"*",schema:"public",table:"despesas_fixas"},()=>{ if(SESSION) fromOthers(); }).subscribe();
+    sb.channel("rt-mem").on("postgres_changes",{event:"*",schema:"public",table:"membros"},fromOthers).subscribe();
   },
   persistLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}},
   persistDesp(){try{localStorage.setItem(LS_KEY+"_desp",JSON.stringify(DESP));}catch(e){}},
+  persistMem(){try{localStorage.setItem(LS_KEY+"_mem",JSON.stringify(MEMBROS));}catch(e){}},
   async reload(){
     if(!CLOUD){return;}
     const {data:cs,error}=await sb.from("contracts").select("*").order("data_inicio",{ascending:false});
@@ -376,7 +398,23 @@ const Store={
       const {data:ds}=await sb.from("despesas_fixas").select("*").order("ordem",{ascending:true});
       DESP=(ds||[]).map(rowToD);
     } else { DESP=[]; }
+    const {data:ms}=await sb.from("membros").select("*").order("ordem",{ascending:true});
+    MEMBROS=(ms||[]).map(rowToM);
     DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
+  },
+  async saveMembro(m){
+    lastLocalWrite=Date.now();
+    const i=MEMBROS.findIndex(x=>x.id===m.id); if(i>=0)MEMBROS[i]=m; else MEMBROS.push(m);
+    if(!CLOUD){ this.persistMem(); return; }
+    const {error}=await sb.from("membros").upsert(mToRow(m));
+    if(error){ await this.reload().catch(()=>{}); throw error; }
+  },
+  async removeMembro(id){
+    lastLocalWrite=Date.now();
+    MEMBROS=MEMBROS.filter(x=>x.id!==id);
+    if(!CLOUD){ this.persistMem(); return; }
+    const {error}=await sb.from("membros").delete().eq("id",id);
+    if(error){ await this.reload().catch(()=>{}); throw error; }
   },
   async saveDesp(d){
     lastLocalWrite=Date.now();
@@ -490,7 +528,43 @@ document.documentElement.setAttribute("data-theme","light");
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){renderKpis();renderDesp();renderList();renderFoot();}
+function render(){renderKpis();renderDesp();renderMembros();renderList();renderFoot();}
+
+function renderMembros(){
+  const wrap=$("#membrosWrap"); if(!wrap)return;
+  const rows=MEMBROS.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  if(!rows.length && ROLE!=="gestao"){ wrap.innerHTML=""; return; }
+  const naDefinir=rows.filter(m=>!m.funcao||m.funcao.toLowerCase()==="a definir").length;
+  const body = ROLE==="gestao"
+    ? `<div style="overflow-x:auto"><table class="tbl desp-tbl"><thead><tr><th>Membro</th><th>Função · o que cuida</th><th class="r"></th></tr></thead>
+       <tbody>${rows.map(memRowEdit).join("")||'<tr><td colspan="3" style="color:var(--ink-soft)">Nenhum membro.</td></tr>'}</tbody></table></div>
+       <button class="add-mini" id="addMem" style="max-width:220px">+ Adicionar membro</button>`
+    : `<div class="mem-list">${rows.map(m=>`<div class="mem-ro"><b>${esc(m.nome)}</b><span>${esc(m.funcao||"a definir")}</span></div>`).join("")}</div>`;
+  wrap.innerHTML=`<div class="card membros-card" style="margin-bottom:22px">
+    <div class="card-head" id="memHead">
+      <div class="c-title"><h3>Equipe &amp; responsabilidades</h3><div class="meta">${ROLE==="gestao"?`Defina quem cuida do quê. Atribua o responsável por etapa dentro de cada contrato.${naDefinir?` · ${naDefinir} a definir`:""}`:"Quem cuida do quê — e o responsável por cada etapa nos contratos"}</div></div>
+      <span class="caret">▶</span></div>
+    <div class="card-body">${body}</div></div>`;
+  wireMembros();
+}
+function memRowEdit(m){
+  return `<tr data-mid="${m.id}">
+    <td><input class="cell" data-mf="nome" value="${esc(m.nome||"")}" placeholder="Nome"></td>
+    <td><input class="cell" data-mf="funcao" value="${esc(m.funcao||"")}" placeholder="Ex.: Design · Tráfego · Social · Sistemas"></td>
+    <td class="r"><button class="link" style="color:var(--crit)" data-mrem="${m.id}">remover</button></td>
+  </tr>`;
+}
+function wireMembros(){
+  const wrap=$("#membrosWrap");
+  const head=wrap.querySelector("#memHead"); if(head)head.onclick=()=>wrap.querySelector(".membros-card").classList.toggle("open");
+  wrap.querySelectorAll("tr[data-mid]").forEach(tr=>{
+    const id=tr.dataset.mid;
+    tr.querySelectorAll("[data-mf]").forEach(inp=>inp.onchange=async()=>{ const m=MEMBROS.find(x=>x.id===id); if(!m)return; m[inp.dataset.mf]=inp.value;
+      try{ await Store.saveMembro(m); }catch(e){ toast("Erro ao salvar membro",true); } });
+  });
+  wrap.querySelectorAll("[data-mrem]").forEach(b=>b.onclick=async(ev)=>{ ev.stopPropagation(); if(confirm("Remover este membro?")){ try{ await Store.removeMembro(b.dataset.mrem); renderMembros(); render(); }catch(e){ toast("Erro ao remover",true);} } });
+  const add=wrap.querySelector("#addMem"); if(add)add.onclick=async(ev)=>{ ev.stopPropagation(); const m={id:uid(),nome:"",funcao:"",ordem:(MEMBROS.reduce((x,y)=>Math.max(x,y.ordem||0),0)+1)}; try{ await Store.saveMembro(m); renderMembros(); }catch(e){ toast("Erro ao adicionar",true);} };
+}
 
 function despesaFixaMes(){return DESP.filter(d=>(d.recorrencia||"mensal")==="mensal").reduce((s,d)=>s+(+d.valor||0),0);}
 
@@ -624,8 +698,15 @@ function bodyHtml(c){
       <button class="btn danger sm" data-del="${c.id}">Excluir</button></div>`:"";
   return meta+escopo+etapas+fin+docs+obs+actions;
 }
-function stageRow(c,e,i){const done=isDone(e.status);return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>
-  <select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;}
+function stageRow(c,e,i){
+  const done=isDone(e.status);
+  const resp = ROLE==="gestao"
+    ? `<select class="st-select resp-sel" data-resp="${c.id}:${i}"><option value="">— responsável</option>${MEMBROS.map(m=>`<option value="${esc(m.nome)}" ${e.resp===m.nome?"selected":""}>${esc(m.nome)}</option>`).join("")}</select>`
+    : (e.resp?`<span class="resp-chip">👤 ${esc(e.resp)}</span>`:`<span class="resp-chip vazio">sem responsável</span>`);
+  return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>
+  ${resp}
+  <select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;
+}
 function parcelaRow(c,p,i){const t=todayISO(),venc=!p.pago&&p.venc&&p.venc<t;const tag=p.pago?`<span class="pay-tag pago">Pago</span>`:venc?`<span class="pay-tag venc">Vencido</span>`:`<span class="pay-tag aberto">Em aberto</span>`;
   return `<tr><td>${esc(p.label||("Parcela "+(i+1)))}</td><td>${brDate(p.venc)}</td><td class="r mono">${fmt(p.valor)}</td><td class="r">${tag} <button class="link" data-pay="${c.id}:${i}">${p.pago?"desmarcar":"marcar pago"}</button></td></tr>`;}
 function despRow(c,d,i){return `<tr><td>${esc(d.desc||"—")}</td><td>${brDate(d.data)}</td><td class="r mono">${fmt(d.valor)}</td><td class="r"><button class="link" style="color:var(--crit)" data-deldesp="${c.id}:${i}">remover</button></td></tr>`;}
@@ -634,6 +715,9 @@ function wireBody(el,c){
   el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
     try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
+  el.querySelectorAll("[data-resp]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
+    const [id,i]=sel.dataset.resp.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].resp=sel.value;
+    try{await Store.patchContract(ct);softRefresh(id);}catch(e){toast("Erro ao salvar responsável",true);}});
   el.querySelectorAll("[data-auto]").forEach(chk=>chk.onchange=async ev=>{ev.stopPropagation();
     const ct=DB.find(x=>x.id===chk.dataset.auto);ct.autoProgresso=chk.checked;if(chk.checked)ct.progressoManual=null;else if(ct.progressoManual==null)ct.progressoManual=progress(ct);
     try{await Store.patchContract(ct);softRefresh(ct.id);renderKpis();}catch(e){toast("Erro ao salvar",true);}});
