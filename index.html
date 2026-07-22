@@ -617,7 +617,7 @@ function bodyHtml(c){
     docs=`<div class="sec hide-team"><div class="h">Documentos / anexos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">visível só na Gestão</span></div>
       ${ax.length?`<div class="anexos">${ax.map(a=>`<a class="anexo" href="${esc(a.url)}" target="_blank" rel="noopener">📎 <span>${esc(a.nome||"arquivo")}</span></a>`).join("")}</div>`:'<div class="scope">Nenhum anexo. Edite o contrato para adicionar links.</div>'}</div>`;
   }
-  const obs=c.obs?`<div class="sec"><div class="h">Observações</div><div class="scope">${esc(c.obs)}</div></div>`:"";
+  const obs=(c.obs&&ROLE==="gestao")?`<div class="sec hide-team"><div class="h">Observações</div><div class="scope">${esc(c.obs)}</div></div>`:"";
   const actions=ROLE==="gestao"?`<div class="row-actions hide-team">
       <button class="btn ghost sm" data-edit="${c.id}">✏️ Editar contrato</button>
       <button class="btn ghost sm" data-dup="${c.id}">Duplicar</button>
