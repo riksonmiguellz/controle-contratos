@@ -103,6 +103,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .chip.pausado{background:var(--warn-tint);color:var(--warn)}
 .chip.encerrado{background:var(--line);color:var(--ink-soft)}
 .chip.atrasado{background:var(--crit-tint);color:var(--crit)}
+.chip.negociacao{background:var(--violet-tint);color:var(--violet)}
 .prog-wrap{width:140px;flex-shrink:0}
 .prog-num{font-size:12px;color:var(--ink-soft);margin-bottom:5px;display:flex;justify-content:space-between}
 .bar{height:8px;background:var(--line);border-radius:6px;overflow:hidden}
@@ -308,7 +309,7 @@ const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;"
 function toast(msg,isErr){const t=$("#toast");t.textContent=msg;t.className="toast show"+(isErr?" err":"");setTimeout(()=>t.className="toast",2600);}
 
 const STAGE_STATES=[{v:"pendente",t:"Pendente"},{v:"andamento",t:"Em andamento"},{v:"concluida",t:"Concluída"},{v:"entregue",t:"Entregue"}];
-const STATUS_LABEL={ativo:"Ativo",andamento:"Em andamento",pausado:"Pausado",encerrado:"Encerrado",atrasado:"Pagamento vencido"};
+const STATUS_LABEL={ativo:"Ativo",negociacao:"Em negociação",andamento:"Em andamento",pausado:"Pausado",encerrado:"Encerrado",atrasado:"Pagamento vencido"};
 
 /* ---------- state ---------- */
 let DB=[];            // array de contratos (com .fin quando gestão)
@@ -523,6 +524,7 @@ function despesaTotal(c){return getFin(c).despesas.reduce((s,d)=>s+(+d.valor||0)
 function temVencido(c){const t=todayISO();return getFin(c).parcelas.some(p=>!p.pago&&p.venc&&p.venc<t);}
 function statusEfetivo(c){
   if(c.status==="encerrado")return "encerrado";
+  if(c.status==="negociacao")return "negociacao";
   if(c.status==="pausado")return "pausado";
   if(ROLE==="gestao"&&temVencido(c))return "atrasado";
   const p=progress(c); if(p>0&&p<100)return "andamento";
@@ -711,7 +713,7 @@ function wireDespPanel(){
 }
 
 function renderKpis(){
-  const box=$("#kpis");const ativos=DB.filter(c=>statusEfetivo(c)!=="encerrado");
+  const box=$("#kpis");const ativos=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao";});
   const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
   const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
   const kpi=(lab,val,sub,cls="",small=false)=>`<div class="kpi ${cls}"><div class="lab">${lab}</div><div class="val ${small?'small':''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:""}</div>`;
@@ -736,7 +738,7 @@ function renderKpis(){
 function renderList(){
   const list=$("#list");let rows=DB.slice().sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
   if(QUERY){const q=QUERY.toLowerCase();rows=rows.filter(c=>(c.cliente+" "+(c.razao||"")+" "+(c.escopo||"")).toLowerCase().includes(q));}
-  if(FILTER!=="todos")rows=rows.filter(c=>{const s=statusEfetivo(c);if(FILTER==="ativo")return s!=="encerrado";if(FILTER==="encerrado")return s==="encerrado";if(FILTER==="atrasado")return s==="atrasado"||s==="pausado";return true;});
+  if(FILTER!=="todos")rows=rows.filter(c=>{const s=statusEfetivo(c);if(FILTER==="ativo")return s!=="encerrado"&&s!=="negociacao";if(FILTER==="encerrado")return s==="encerrado";if(FILTER==="atrasado")return s==="atrasado"||s==="pausado"||s==="negociacao";return true;});
   list.innerHTML="";
   if(!rows.length){list.innerHTML=`<div class="empty">Nenhum contrato encontrado.</div>`;return;}
   rows.forEach(c=>list.appendChild(cardEl(c)));
@@ -744,7 +746,7 @@ function renderList(){
 function cardEl(c){
   const el=document.createElement("div");el.className="card";el.dataset.id=c.id;
   const s=statusEfetivo(c),p=progress(c);
-  const chip=s==="encerrado"?"encerrado":s==="atrasado"?"atrasado":s==="pausado"?"pausado":s==="andamento"?"andamento":"ativo";
+  const chip=s==="encerrado"?"encerrado":s==="atrasado"?"atrasado":s==="negociacao"?"negociacao":s==="pausado"?"pausado":s==="andamento"?"andamento":"ativo";
   const doneN=(c.etapas||[]).filter(e=>isDone(e.status)).length,totN=(c.etapas||[]).length;
   const money=ROLE==="gestao"?`<div class="money-head hide-team"><div class="big mono">${fmt(getFin(c).valorTotal)}</div><div class="lil">${getFin(c).valorMensal?fmt(getFin(c).valorMensal)+"/mês":"recebido "+fmt(recebido(c))}</div></div>`:"";
   el.innerHTML=`<div class="card-head">
@@ -865,7 +867,7 @@ function contractModal(id){
       <div class="field"><label>Cliente (nome de exibição)</label><input id="f-cliente" value="${esc(c.cliente)}" placeholder="Ex.: LAVIH SPA — Vila Leopoldina"></div>
       <div class="field-row"><div class="field"><label>Razão social</label><input id="f-razao" value="${esc(c.razao)}"></div><div class="field"><label>CNPJ</label><input id="f-cnpj" value="${esc(c.cnpj)}"></div></div>
       <div class="field-row"><div class="field"><label>Responsável / contato</label><input id="f-rep" value="${esc(c.rep)}"></div>
-        <div class="field"><label>Status</label><select id="f-status">${["ativo","pausado","encerrado"].map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${STATUS_LABEL[s]}</option>`).join("")}</select></div></div>
+        <div class="field"><label>Status</label><select id="f-status">${["ativo","negociacao","pausado","encerrado"].map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${STATUS_LABEL[s]}</option>`).join("")}</select></div></div>
       <div class="field-row three"><div class="field"><label>Data de início</label><input type="date" id="f-ini" value="${c.dataInicio||""}"></div>
         <div class="field"><label>Data de finalização</label><input type="date" id="f-fim" value="${c.dataFim||""}"></div>
         <div class="field"><label>Assinatura</label><input type="date" id="f-ass" value="${c.dataAssinatura||""}"></div></div>
