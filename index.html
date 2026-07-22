@@ -121,6 +121,10 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .mi .k{font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
 .mi .v{font-weight:650;margin-top:3px;font-size:14px}
 .scope{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink);white-space:pre-wrap}
+.anexos{display:flex;flex-direction:column;gap:8px}
+.anexo{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:11px 13px;text-decoration:none;color:var(--ink);font-weight:600;font-size:13.5px;transition:.15s}
+.anexo:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-tint)}
+.anexo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prog-ctl{display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:12px;flex-wrap:wrap}
 .prog-ctl .toggle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;white-space:nowrap}
 .prog-ctl input[type=range]{flex:1;min-width:120px;accent-color:var(--violet)}
@@ -317,10 +321,10 @@ async function ensureSB(){
 function rowToC(r,fin){return {id:r.id,cliente:r.cliente,razao:r.razao,cnpj:r.cnpj,rep:r.rep,status:r.status,
   dataInicio:r.data_inicio,dataFim:r.data_fim,dataAssinatura:r.data_assinatura,prazoTipo:r.prazo_tipo,prazoValor:r.prazo_valor,
   escopo:r.escopo,obs:r.obs,etapas:r.etapas||[],autoProgresso:r.auto_progresso!==false,progresso_manual:r.progresso_manual,
-  progressoManual:r.progresso_manual, fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
+  progressoManual:r.progresso_manual, anexos:r.anexos||[], fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
 function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,rep:c.rep,status:c.status,
   data_inicio:c.dataInicio||null,data_fim:c.dataFim||null,data_assinatura:c.dataAssinatura||null,prazo_tipo:c.prazoTipo,prazo_valor:c.prazoValor?+c.prazoValor:null,
-  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
+  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
 
 const Store={
@@ -526,12 +530,18 @@ function bodyHtml(c){
       <tbody>${getFin(c).despesas.map((d,i)=>despRow(c,d,i)).join("")||'<tr><td colspan="4" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table>
       <button class="add-mini" data-add-desp="${c.id}">+ Lançar despesa</button></div>`;
   }
+  let docs="";
+  if(ROLE==="gestao"){
+    const ax=c.anexos||[];
+    docs=`<div class="sec hide-team"><div class="h">Documentos / anexos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">visível só na Gestão</span></div>
+      ${ax.length?`<div class="anexos">${ax.map(a=>`<a class="anexo" href="${esc(a.url)}" target="_blank" rel="noopener">📎 <span>${esc(a.nome||"arquivo")}</span></a>`).join("")}</div>`:'<div class="scope">Nenhum anexo. Edite o contrato para adicionar links.</div>'}</div>`;
+  }
   const obs=c.obs?`<div class="sec"><div class="h">Observações</div><div class="scope">${esc(c.obs)}</div></div>`:"";
   const actions=ROLE==="gestao"?`<div class="row-actions hide-team">
       <button class="btn ghost sm" data-edit="${c.id}">✏️ Editar contrato</button>
       <button class="btn ghost sm" data-dup="${c.id}">Duplicar</button>
       <button class="btn danger sm" data-del="${c.id}">Excluir</button></div>`:"";
-  return meta+escopo+etapas+fin+obs+actions;
+  return meta+escopo+etapas+fin+docs+obs+actions;
 }
 function stageRow(c,e,i){const done=isDone(e.status);return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>
   <select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;}
@@ -569,8 +579,9 @@ function softRefresh(id){const c=DB.find(x=>x.id===id);if(!c)return;const old=do
    ============================================================ */
 function contractModal(id){
   const editing=!!id;
-  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}};
+  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}};
   if(!c.fin)c.fin={valorTotal:"",valorMensal:"",parcelas:[],despesas:[]};
+  if(!c.anexos)c.anexos=[];
   const m=document.createElement("div");m.className="modal-bg";
   m.innerHTML=`<div class="modal"><div class="modal-head"><h2>${editing?"Editar contrato":"Novo contrato"}</h2><button class="close-x" data-x>×</button></div>
     <div class="modal-body">
@@ -587,12 +598,14 @@ function contractModal(id){
         <div class="field"><label>&nbsp;</label><button class="add-mini" id="genParc" type="button" style="margin-top:0">⚙︎ Gerar parcelas automaticamente</button></div></div>
       <div class="field"><label>Escopo contratado</label><textarea id="f-escopo" rows="4">${esc(c.escopo)}</textarea></div>
       <div class="field"><label>Etapas / entregas</label><div id="stagesWrap"></div><button class="add-mini" id="addStage" type="button">+ Adicionar etapa</button></div>
+      <div class="field"><label>Documentos / anexos (links) — visível só na Gestão</label><div id="anexWrap"></div><button class="add-mini" id="addAnex" type="button">+ Adicionar anexo (link)</button></div>
       <div class="field"><label>Parcelas ${ROLE==="gestao"?"":"(somente Gestão)"}</label><div id="parcWrap"></div><button class="add-mini" id="addParc" type="button">+ Adicionar parcela</button></div>
       <div class="field"><label>Observações</label><textarea id="f-obs" rows="2">${esc(c.obs)}</textarea></div>
     </div>
     <div class="modal-foot"><button class="btn ghost" data-x>Cancelar</button><button class="btn" id="saveC">${editing?"Salvar alterações":"Criar contrato"}</button></div></div>`;
   $("#modalMount").appendChild(m);
-  const stagesWrap=m.querySelector("#stagesWrap"),parcWrap=m.querySelector("#parcWrap");
+  const stagesWrap=m.querySelector("#stagesWrap"),parcWrap=m.querySelector("#parcWrap"),anexWrap=m.querySelector("#anexWrap");
+  const drawAnex=()=>{ anexWrap.innerHTML=c.anexos.map((a,i)=>`<div class="dyn-row" style="grid-template-columns:1fr 1.4fr 30px"><input value="${esc(a.nome)}" data-an="${i}" placeholder="Nome (ex.: Dossiê Dingo)"><input value="${esc(a.url)}" data-au="${i}" placeholder="https://link-do-arquivo"><button class="icon-btn" type="button" data-ra="${i}">🗑</button></div>`).join(""); wireDyn(); };
   const drawStages=()=>{stagesWrap.innerHTML=c.etapas.map((e,i)=>`<div class="dyn-row stage-row"><input value="${esc(e.nome)}" data-sn="${i}" placeholder="Nome da etapa"><select data-ss="${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select><button class="icon-btn" type="button" data-rs="${i}">🗑</button></div>`).join("");wireDyn();};
   const drawParc=()=>{parcWrap.innerHTML=c.fin.parcelas.map((p,i)=>`<div class="dyn-row"><input value="${esc(p.label)}" data-pn="${i}" placeholder="Ex.: 1ª parcela"><input type="number" step="0.01" value="${p.valor}" data-pv="${i}" placeholder="Valor"><input type="date" value="${p.venc||""}" data-pd="${i}"><button class="icon-btn" type="button" data-rp="${i}">🗑</button></div>`).join("");wireDyn();};
   function wireDyn(){
@@ -603,10 +616,14 @@ function contractModal(id){
     parcWrap.querySelectorAll("[data-pv]").forEach(el=>el.oninput=()=>c.fin.parcelas[+el.dataset.pv].valor=+el.value);
     parcWrap.querySelectorAll("[data-pd]").forEach(el=>el.onchange=()=>c.fin.parcelas[+el.dataset.pd].venc=el.value);
     parcWrap.querySelectorAll("[data-rp]").forEach(el=>el.onclick=()=>{c.fin.parcelas.splice(+el.dataset.rp,1);drawParc();});
+    anexWrap.querySelectorAll("[data-an]").forEach(el=>el.oninput=()=>c.anexos[+el.dataset.an].nome=el.value);
+    anexWrap.querySelectorAll("[data-au]").forEach(el=>el.oninput=()=>c.anexos[+el.dataset.au].url=el.value);
+    anexWrap.querySelectorAll("[data-ra]").forEach(el=>el.onclick=()=>{c.anexos.splice(+el.dataset.ra,1);drawAnex();});
   }
-  drawStages();drawParc();
+  drawStages();drawParc();drawAnex();
   m.querySelector("#addStage").onclick=()=>{c.etapas.push({nome:"",status:"pendente"});drawStages();};
   m.querySelector("#addParc").onclick=()=>{c.fin.parcelas.push({label:(c.fin.parcelas.length+1)+"ª parcela",valor:"",venc:"",pago:false});drawParc();};
+  m.querySelector("#addAnex").onclick=()=>{c.anexos.push({nome:"",url:""});drawAnex();};
   m.querySelector("#genParc").onclick=()=>{const total=+m.querySelector("#f-valor").value||0;const n=parseInt(prompt("Quantas parcelas?","4"),10);if(!n||n<1)return;const ini=m.querySelector("#f-ini").value||m.querySelector("#f-ass").value||todayISO();const each=Math.round(total/n*100)/100;c.fin.parcelas=Array.from({length:n},(_,i)=>({label:(i+1)+"ª parcela",valor:each,venc:addMonths(ini,i),pago:false}));drawParc();};
   m.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>m.remove());
   m.onclick=e=>{if(e.target===m)m.remove();};
@@ -617,6 +634,7 @@ function contractModal(id){
     c.dataInicio=m.querySelector("#f-ini").value;c.dataFim=m.querySelector("#f-fim").value;c.dataAssinatura=m.querySelector("#f-ass").value;
     c.prazoValor=m.querySelector("#f-prazoV").value;c.prazoTipo=m.querySelector("#f-prazoT").value;
     c.escopo=m.querySelector("#f-escopo").value.trim();c.obs=m.querySelector("#f-obs").value.trim();
+    c.anexos=(c.anexos||[]).filter(a=>a&&a.url&&a.url.trim());
     c.fin.valorTotal=+m.querySelector("#f-valor").value||0;c.fin.valorMensal=+m.querySelector("#f-mensal").value||0;
     if(!c.dataFim&&c.dataInicio&&c.prazoValor)c.dataFim=c.prazoTipo==="dias"?addDays(c.dataInicio,+c.prazoValor):addMonths(c.dataInicio,+c.prazoValor);
     const btn=m.querySelector("#saveC");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando';
