@@ -125,6 +125,11 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .anexo{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:11px 13px;text-decoration:none;color:var(--ink);font-weight:600;font-size:13.5px;transition:.15s}
 .anexo:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-tint)}
 .anexo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.desp-tbl td{padding:6px 8px;vertical-align:middle}
+.desp-tbl .cell{padding:8px 9px;font-size:13.5px;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:8px;width:100%}
+.desp-tbl .cell.rr{text-align:right}
+.desp-tbl th{white-space:nowrap}
+.desp-tbl td:nth-child(3){min-width:120px}
 .prog-ctl{display:flex;align-items:center;gap:12px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:11px 13px;margin-bottom:12px;flex-wrap:wrap}
 .prog-ctl .toggle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;white-space:nowrap}
 .prog-ctl input[type=range]{flex:1;min-width:120px;accent-color:var(--violet)}
@@ -229,6 +234,7 @@ body.team .hide-team{display:none !important}
   </div>
   <div class="wrap">
     <div class="kpis" id="kpis"></div>
+    <div id="despWrap" class="hide-team"></div>
     <div class="toolbar">
       <div class="search"><span class="mag">🔍</span><input type="text" id="q" placeholder="Buscar contrato ou cliente..."></div>
       <div class="seg" id="filterSeg">
@@ -279,6 +285,7 @@ const STATUS_LABEL={ativo:"Ativo",andamento:"Em andamento",pausado:"Pausado",enc
 
 /* ---------- state ---------- */
 let DB=[];            // array de contratos (com .fin quando gestão)
+let DESP=[];          // despesas fixas mensais (só gestão)
 let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="todos", QUERY="";
@@ -325,12 +332,25 @@ function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,r
   data_inicio:c.dataInicio||null,data_fim:c.dataFim||null,data_assinatura:c.dataAssinatura||null,prazo_tipo:c.prazoTipo,prazo_valor:c.prazoValor?+c.prazoValor:null,
   escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
+function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
+function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
+function seedDesp(){return [
+  {id:"d1",nome:"Felipe",valor:2500,recorrencia:"mensal",categoria:"Equipe",ordem:1},
+  {id:"d2",nome:"Anderson",valor:1000,recorrencia:"mensal",categoria:"Equipe",ordem:2},
+  {id:"d3",nome:"Daniel",valor:500,recorrencia:"mensal",categoria:"Equipe",ordem:3},
+  {id:"d4",nome:"Matheus",valor:1000,recorrencia:"mensal",categoria:"Equipe",ordem:4},
+  {id:"d5",nome:"BeNow",valor:null,recorrencia:"mensal",categoria:"Fornecedor",ordem:5},
+  {id:"d6",nome:"Cláudio",valor:null,recorrencia:"mensal",categoria:"Equipe",ordem:6},
+  {id:"d7",nome:"Outras despesas",valor:null,recorrencia:"mensal",categoria:"Geral",ordem:7},
+];}
 
 const Store={
   async init(){
     if(!CLOUD){ // LOCAL
       try{const raw=localStorage.getItem(LS_KEY);DB=raw?JSON.parse(raw):seed();}catch(e){DB=seed();}
       if(!localStorage.getItem(LS_KEY))this.persistLocal();
+      try{const rd=localStorage.getItem(LS_KEY+"_desp");DESP=rd?JSON.parse(rd):seedDesp();}catch(e){DESP=seedDesp();}
+      if(!localStorage.getItem(LS_KEY+"_desp"))this.persistDesp();
       return;
     }
     await ensureSB();
@@ -341,8 +361,10 @@ const Store={
     const fromOthers=()=>{ if(Date.now()-lastLocalWrite>2500) this.reload().then(render).catch(()=>{}); };
     sb.channel("rt-contracts").on("postgres_changes",{event:"*",schema:"public",table:"contracts"},fromOthers).subscribe();
     sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) fromOthers(); }).subscribe();
+    sb.channel("rt-desp").on("postgres_changes",{event:"*",schema:"public",table:"despesas_fixas"},()=>{ if(SESSION) fromOthers(); }).subscribe();
   },
   persistLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}},
+  persistDesp(){try{localStorage.setItem(LS_KEY+"_desp",JSON.stringify(DESP));}catch(e){}},
   async reload(){
     if(!CLOUD){return;}
     const {data:cs,error}=await sb.from("contracts").select("*").order("data_inicio",{ascending:false});
@@ -351,8 +373,24 @@ const Store={
     if(SESSION){
       const {data:fs}=await sb.from("contract_finance").select("*");
       (fs||[]).forEach(f=>finMap[f.contract_id]=f);
-    }
+      const {data:ds}=await sb.from("despesas_fixas").select("*").order("ordem",{ascending:true});
+      DESP=(ds||[]).map(rowToD);
+    } else { DESP=[]; }
     DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
+  },
+  async saveDesp(d){
+    lastLocalWrite=Date.now();
+    const i=DESP.findIndex(x=>x.id===d.id); if(i>=0)DESP[i]=d; else DESP.push(d);
+    if(!CLOUD){ this.persistDesp(); return; }
+    const {error}=await sb.from("despesas_fixas").upsert(dToRow(d));
+    if(error){ await this.reload().catch(()=>{}); throw error; }
+  },
+  async removeDesp(id){
+    lastLocalWrite=Date.now();
+    DESP=DESP.filter(x=>x.id!==id);
+    if(!CLOUD){ this.persistDesp(); return; }
+    const {error}=await sb.from("despesas_fixas").delete().eq("id",id);
+    if(error){ await this.reload().catch(()=>{}); throw error; }
   },
   _upsertLocal(c){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; else DB.push(c); },
   async saveContract(c,{withFin}={}){   // criar/editar contrato (gestão)
@@ -452,7 +490,51 @@ document.documentElement.setAttribute("data-theme","light");
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){renderKpis();renderList();renderFoot();}
+function render(){renderKpis();renderDesp();renderList();renderFoot();}
+
+function despesaFixaMes(){return DESP.filter(d=>(d.recorrencia||"mensal")==="mensal").reduce((s,d)=>s+(+d.valor||0),0);}
+
+function renderDesp(){
+  const wrap=$("#despWrap"); if(!wrap)return;
+  if(ROLE!=="gestao"){ wrap.innerHTML=""; return; }
+  const rows=DESP.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  const naDefinir=DESP.filter(d=>d.valor==null).length;
+  wrap.innerHTML=`<div class="card desp-card" style="margin-bottom:22px">
+    <div class="card-head" style="cursor:default">
+      <div class="c-title"><h3>Despesas fixas · mensais</h3><div class="meta">Edite qualquer linha — nome, categoria, valor e recorrência. Valor vazio = “a definir”.${naDefinir?` · ${naDefinir} a definir`:""}</div></div>
+      <div class="money-head"><div class="big mono" id="despTotal">${fmt(despesaFixaMes())}</div><div class="lil">total mensal</div></div>
+    </div>
+    <div class="card-body" style="display:block">
+      <div style="overflow-x:auto"><table class="tbl desp-tbl"><thead><tr><th>Descrição</th><th>Categoria</th><th class="r">Valor / mês</th><th>Recorrência</th><th class="r"></th></tr></thead>
+      <tbody>${rows.map(despRowEdit).join("")||'<tr><td colspan="5" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table></div>
+      <button class="add-mini" id="addDesp" style="max-width:220px">+ Adicionar despesa</button>
+    </div></div>`;
+  wireDespPanel();
+}
+function despRowEdit(d){
+  return `<tr data-did="${d.id}">
+    <td><input class="cell" data-df="nome" value="${esc(d.nome||"")}" placeholder="Descrição"></td>
+    <td><input class="cell" data-df="categoria" value="${esc(d.categoria||"")}" placeholder="—"></td>
+    <td class="r"><input class="cell rr mono" data-df="valor" type="number" step="0.01" value="${d.valor==null?"":d.valor}" placeholder="a definir"></td>
+    <td><select class="cell" data-df="recorrencia"><option value="mensal" ${d.recorrencia!=="unica"?"selected":""}>mensal</option><option value="unica" ${d.recorrencia==="unica"?"selected":""}>única</option></select></td>
+    <td class="r"><button class="link" style="color:var(--crit)" data-drem="${d.id}">remover</button></td>
+  </tr>`;
+}
+function updateDespTotal(){const el=$("#despTotal");if(el)el.textContent=fmt(despesaFixaMes());}
+function wireDespPanel(){
+  const wrap=$("#despWrap");
+  wrap.querySelectorAll("tr[data-did]").forEach(tr=>{
+    const id=tr.dataset.did;
+    tr.querySelectorAll("[data-df]").forEach(inp=>{
+      const commit=async()=>{ const d=DESP.find(x=>x.id===id); if(!d)return; const f=inp.dataset.df;
+        d[f]= f==="valor" ? (inp.value===""?null:+inp.value) : inp.value;
+        try{ await Store.saveDesp(d); updateDespTotal(); renderKpis(); }catch(e){ toast("Erro ao salvar despesa",true); } };
+      inp.onchange=commit;
+    });
+  });
+  wrap.querySelectorAll("[data-drem]").forEach(b=>b.onclick=async()=>{ if(confirm("Remover esta despesa?")){ try{ await Store.removeDesp(b.dataset.drem); renderDesp(); renderKpis(); }catch(e){ toast("Erro ao remover",true);} } });
+  const add=wrap.querySelector("#addDesp"); if(add)add.onclick=async()=>{ const d={id:uid(),nome:"",valor:null,recorrencia:"mensal",categoria:"",ordem:(DESP.reduce((m,x)=>Math.max(m,x.ordem||0),0)+1)}; try{ await Store.saveDesp(d); renderDesp(); }catch(e){ toast("Erro ao adicionar",true);} };
+}
 
 function renderKpis(){
   const box=$("#kpis");const ativos=DB.filter(c=>statusEfetivo(c)!=="encerrado");
@@ -467,13 +549,13 @@ function renderKpis(){
     const totMes=ativos.reduce((s,c)=>s+getFin(c).valorMensal,0);
     const totR=DB.reduce((s,c)=>s+recebido(c),0);
     const totAR=DB.reduce((s,c)=>s+aReceber(c),0);
-    const totD=DB.reduce((s,c)=>s+despesaTotal(c),0);
+    const despFixMes=despesaFixaMes();
     h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent",true);
     h+=kpi("A receber / mês",fmt(totMes),"recorrente (ativos)","",true);
+    h+=kpi("Despesas fixas / mês",fmt(despFixMes),"custos mensais","",true);
+    h+=kpi("Resultado / mês",fmt(totMes-despFixMes),"receita − despesas","",true);
     h+=kpi("Recebido",fmt(totR),"parcelas pagas","",true);
     h+=kpi("A receber",fmt(totAR),"parcelas em aberto","",true);
-    h+=kpi("Despesas",fmt(totD),"custos lançados","",true);
-    h+=kpi("Resultado",fmt(totR-totD),"recebido − despesas","",true);
   }
   box.innerHTML=h;
 }
