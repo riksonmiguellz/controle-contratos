@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -220,7 +220,6 @@ body.team .hide-team{display:none !important}
     <span class="pill-role" id="rolePill">—</span>
     <span class="pill-mode" id="modePill">Local</span>
     <div class="spacer"></div>
-    <button class="btn ghost sm" id="themeBtn" title="Alternar tema">🌓</button>
     <button class="btn ghost sm" id="exportBtn">Backup</button>
     <button class="btn ghost sm hide-team" id="importBtn">Importar</button>
     <button class="btn ghost sm" id="printBtn">Imprimir</button>
@@ -447,8 +446,8 @@ function enterUI(role){
 }
 $("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#pwRow").classList.remove("show");$("#gateErr").textContent=""; };
 
-/* ---------- theme ---------- */
-$("#themeBtn").onclick=()=>{const cur=document.documentElement.getAttribute("data-theme");const next=cur==="dark"?"light":(cur==="light"?"dark":(matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark"));document.documentElement.setAttribute("data-theme",next);};
+/* ---------- tema: sempre claro ---------- */
+document.documentElement.setAttribute("data-theme","light");
 
 /* ============================================================
    RENDER
