@@ -107,6 +107,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .kpi .sub{font-size:12px;color:var(--ink-soft);margin-top:3px}
 .kpi.accent{background:linear-gradient(135deg,var(--violet),var(--navy));border:none;color:#fff}
 .kpi.accent .lab,.kpi.accent .sub{color:rgba(255,255,255,.82)}
+.viewnav{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
+.viewnav button:hover{border-color:var(--violet);color:var(--violet)}
+.viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
+#despWrap{display:none}
+body.view-despesas #alertWrap,body.view-despesas #membrosWrap,body.view-despesas #atribWrap,body.view-despesas .kpis,body.view-despesas .toolbar,body.view-despesas #list{display:none}
+body.view-despesas #despWrap{display:block}
+.kpi.goview{cursor:pointer}
+.kpi.goview:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(109,59,245,.16);border-color:color-mix(in srgb,var(--violet) 45%,var(--line))}
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
 .toolbar .search{position:relative;flex:1;min-width:180px}
 .toolbar .search input{padding-left:34px}
@@ -367,6 +376,10 @@ body.team .hide-team{display:none !important}
     <input type="file" id="fileIn" accept="application/json" class="hidden">
   </div>
   <div class="wrap">
+    <div class="viewnav hide-team" id="viewnav">
+      <button data-view="contratos" class="active">📋 Contratos</button>
+      <button data-view="despesas">💸 Despesas fixas</button>
+    </div>
     <div class="kpis" id="kpis"></div>
     <div id="alertWrap"></div>
     <div id="despWrap" class="hide-team"></div>
@@ -428,6 +441,7 @@ let MEMBROS=[];       // equipe / responsáveis (visível a todos)
 let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="todos", QUERY="";
+let VIEW="contratos"; // aba atual: contratos | despesas
 let sb=null;          // supabase client
 let lastLocalWrite=0; // guarda p/ evitar que o realtime da própria escrita atropele a UI
 let CONNECTED=false;  // status da conexão em tempo real (nuvem viva)
@@ -701,6 +715,7 @@ function enterUI(role){
   try{window.BGFX&&window.BGFX.stop();}catch(e){}
   document.body.classList.toggle("team",role==="team");
   $("#rolePill").textContent = role==="gestao"?"Gestão":"Equipe";
+  switchView("contratos");
   render();
   const w=$(".wrap"); if(w){ w.classList.remove("reveal"); void w.offsetWidth; w.classList.add("reveal"); }
 }
@@ -917,19 +932,25 @@ function renderKpis(){
     const despFixMes=despesaFixaMes();
     h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent",true);
     h+=kpi("A receber / mês",fmt(totMes),"recorrente (ativos)","",true);
-    h+=kpi("Despesas fixas / mês",fmt(despFixMes),"custos mensais","",true);
+    h+=kpi("Despesas fixas / mês",fmt(despFixMes),"custos mensais · abrir aba","goview",true);
     h+=kpi("Resultado / mês",fmt(totMes-despFixMes),"receita − despesas","",true);
     h+=kpi("Recebido",fmt(totR),"parcelas pagas","",true);
     h+=kpi("A receber",fmt(totAR),"parcelas em aberto","",true);
   }
   box.innerHTML=h;
   box.querySelectorAll("[data-kpifilter]").forEach(k=>k.onclick=()=>setFilter(k.dataset.kpifilter));
+  box.querySelectorAll(".goview").forEach(k=>k.onclick=()=>switchView("despesas"));
 }
 function setFilter(f){
   FILTER=(FILTER===f && f!=="todos")?"todos":f;   // clicar de novo no mesmo card volta pra Todos
   const seg=$("#filterSeg"); if(seg)seg.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.f===FILTER));
   renderKpis(); renderList();
   const l=$("#list"); if(l && !matchMedia("(prefers-reduced-motion:reduce)").matches) l.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function switchView(v){
+  VIEW=v; document.body.classList.toggle("view-despesas",v==="despesas");
+  const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
+  if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
 }
 function renderList(){
   const list=$("#list");let rows=DB.slice().sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
@@ -1151,6 +1172,7 @@ function despesaModal(id){
 $("#addBtn").onclick=()=>contractModal(null);
 $("#q").oninput=e=>{QUERY=e.target.value;renderList();};
 $("#filterSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>setFilter(b.dataset.f));
+$("#viewnav").querySelectorAll("button").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 $("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup-contratos-fortuna-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);};
 $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
