@@ -142,9 +142,13 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .switch input:checked + .sl:before{transform:translateX(18px)}
 .stage{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;background:var(--panel-2);flex-wrap:wrap}
 .stage .name{flex:1;min-width:160px;font-size:14px}
-.resp-sel{min-width:150px;color:var(--violet)}
-.resp-chip{font-size:12px;font-weight:650;padding:4px 10px;border-radius:999px;background:var(--violet-tint);color:var(--violet);white-space:nowrap}
-.resp-chip.vazio{background:var(--line);color:var(--ink-soft);font-weight:500}
+.resp-wrap{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.resp-add{min-width:140px;color:var(--violet)}
+.resp-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:650;padding:4px 6px 4px 10px;border-radius:999px;background:var(--violet-tint);color:var(--violet);white-space:nowrap}
+.resp-chip.vazio{background:var(--line);color:var(--ink-soft);font-weight:500;padding:4px 10px}
+.resp-chip .rx{border:none;background:color-mix(in srgb,var(--violet) 22%,transparent);color:var(--violet);width:16px;height:16px;border-radius:50%;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.resp-chip .rx:hover{background:var(--crit);color:#fff}
+.apelido{font-weight:600;color:var(--violet);font-size:13px}
 .mem-list{display:flex;flex-direction:column;gap:8px}
 .mem-ro{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:14px}
 .mem-ro b{font-weight:700}
@@ -358,14 +362,21 @@ function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,r
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
 function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
 function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
-function rowToM(r){return {id:r.id,nome:r.nome,nomeCompleto:r.nome_completo||"",funcao:r.funcao||"",foto:r.foto||"",whatsapp:r.whatsapp||"",email:r.email||"",aprovado:r.aprovado!==false,ordem:r.ordem||0};}
-function mToRow(m){return {id:m.id,nome:m.nome||"",nome_completo:m.nomeCompleto||"",funcao:m.funcao||"",foto:m.foto||"",whatsapp:m.whatsapp||"",email:m.email||"",aprovado:m.aprovado!==false,ordem:m.ordem||0};}
-function seedMembros(){return [
-  {id:"m1",nome:"Felipe",nomeCompleto:"",funcao:"a definir",foto:"",whatsapp:"",email:"",aprovado:true,ordem:1},
-  {id:"m2",nome:"Anderson",nomeCompleto:"",funcao:"a definir",foto:"",whatsapp:"",email:"",aprovado:true,ordem:2},
-  {id:"m3",nome:"Daniel",nomeCompleto:"",funcao:"a definir",foto:"",whatsapp:"",email:"",aprovado:true,ordem:3},
-  {id:"m4",nome:"Matheus",nomeCompleto:"",funcao:"a definir",foto:"",whatsapp:"",email:"",aprovado:true,ordem:4},
-  {id:"m5",nome:"Cláudio",nomeCompleto:"",funcao:"a definir",foto:"",whatsapp:"",email:"",aprovado:true,ordem:5},
+function rowToM(r){return {id:r.id,nome:r.nome,apelido:r.apelido||"",nomeCompleto:r.nome_completo||"",funcao:r.funcao||"",foto:r.foto||"",whatsapp:r.whatsapp||"",email:r.email||"",aprovado:r.aprovado!==false,ordem:r.ordem||0};}
+function mToRow(m){return {id:m.id,nome:m.nome||"",apelido:m.apelido||"",nome_completo:m.nomeCompleto||"",funcao:m.funcao||"",foto:m.foto||"",whatsapp:m.whatsapp||"",email:m.email||"",aprovado:m.aprovado!==false,ordem:m.ordem||0};}
+function seedMembros(){const b=(id,nome,apelido,funcao,ordem)=>({id,nome,apelido,nomeCompleto:"",funcao,foto:"",whatsapp:"",email:"",aprovado:true,ordem});return [
+  b("c4qta8pc9","Miguel","Miguelito","Head e Gestor Geral",1),
+  b("m1","Felipe","Tirulipa","a definir",2),
+  b("fabio","Fabio","Fabinho","Head e Gestor Geral",3),
+  b("m2","Anderson","Carioca","a definir",4),
+  b("carol","Carol","","A definir (em breve)",5),
+  b("m5","Cláudio","Claudinho","Head e Gestor Geral",6),
+  b("m3","Daniel","Dani","Codagem e Captação",7),
+  b("dyane","Dyane","","Fera do Ads",8),
+  b("m4","Matheus","","Viral do Insta",9),
+  b("adrielli","Adrielli","","Fera do Ads",10),
+  b("wallax","Wallax","","Editor",11),
+  b("irineu","Irineu","","A definir (em breve)",12),
 ];}
 function waLink(num){ if(!num)return ""; let d=String(num).replace(/\D/g,""); if(!d)return ""; if(d.length<=11) d="55"+d; return "https://wa.me/"+d; }
 function iniciais(nome){ const p=String(nome||"?").trim().split(/\s+/); return ((p[0]||"?")[0]+(p.length>1?p[p.length-1][0]:"")).toUpperCase(); }
@@ -575,7 +586,8 @@ function renderMembros(){
 }
 function avatarHtml(m){ return m.foto?`<img class="avatar" src="${esc(m.foto)}" alt="">`:`<span class="avatar">${esc(iniciais(m.nomeCompleto||m.nome))}</span>`; }
 function memCardHtml(m){
-  const nome=m.nomeCompleto||m.nome||"(sem nome)";
+  const base=m.nomeCompleto||m.nome||"(sem nome)";
+  const nome=m.apelido?`${esc(base)} <span class="apelido">«${esc(m.apelido)}»</span>`:esc(base);
   const wa=waLink(m.whatsapp);
   const contatos=`<div class="mem-contacts">
     ${wa?`<a class="contact-btn contact-wa" href="${wa}" target="_blank" rel="noopener">WhatsApp</a>`:""}
@@ -592,7 +604,7 @@ function memCardHtml(m){
     actions=`<div class="mem-actions"><button class="btn ghost sm" data-medit="${m.id}">Editar meus dados</button></div>`;
   }
   return `<div class="mem-card">
-    <div class="mem-top">${avatarHtml(m)}<div style="min-width:0"><div class="mem-name">${esc(nome)} ${badge}</div><div class="mem-func">${esc(m.funcao||"a definir")}</div></div></div>
+    <div class="mem-top">${avatarHtml(m)}<div style="min-width:0"><div class="mem-name">${nome} ${badge}</div><div class="mem-func">${esc(m.funcao||"a definir")}</div></div></div>
     ${(wa||m.email)?contatos:`<div class="mem-func" style="opacity:.7">Sem contato cadastrado</div>`}
     ${actions}</div>`;
 }
@@ -618,9 +630,10 @@ function memberModal(id){
       </div>
       <div class="field"><label>Nome completo</label><input id="mm-nomec" value="${esc(m.nomeCompleto)}" placeholder="Nome e sobrenome"></div>
       <div class="field-row">
-        <div class="field"><label>Apelido / exibição</label><input id="mm-nome" value="${esc(m.nome)}" placeholder="Como aparece na lista"></div>
-        <div class="field"><label>Função · o que cuida</label><input id="mm-funcao" value="${esc(m.funcao)}" placeholder="Ex.: Design, Tráfego"></div>
+        <div class="field"><label>Nome de exibição</label><input id="mm-nome" value="${esc(m.nome)}" placeholder="Como aparece na lista"></div>
+        <div class="field"><label>Apelido</label><input id="mm-apelido" value="${esc(m.apelido||"")}" placeholder="Ex.: Carioca, Tirulipa"></div>
       </div>
+      <div class="field"><label>Função · o que cuida</label><input id="mm-funcao" value="${esc(m.funcao)}" placeholder="Ex.: Fera do Ads, Editor, Codagem"></div>
       <div class="field-row">
         <div class="field"><label>WhatsApp</label><input id="mm-wa" value="${esc(m.whatsapp)}" placeholder="(11) 90000-0000" inputmode="tel"></div>
         <div class="field"><label>E-mail</label><input id="mm-email" type="email" value="${esc(m.email)}" placeholder="nome@email.com"></div>
@@ -641,6 +654,7 @@ function memberModal(id){
       if(novaFoto){ bg.querySelector("#avStatus").textContent="Enviando foto..."; m.foto=await uploadAvatar(novaFoto); }
       m.nomeCompleto=bg.querySelector("#mm-nomec").value.trim();
       m.nome=bg.querySelector("#mm-nome").value.trim()|| (m.nomeCompleto.split(/\s+/)[0]||"");
+      m.apelido=bg.querySelector("#mm-apelido").value.trim();
       m.funcao=bg.querySelector("#mm-funcao").value.trim();
       m.whatsapp=bg.querySelector("#mm-wa").value.trim();
       m.email=bg.querySelector("#mm-email").value.trim();
@@ -784,14 +798,19 @@ function bodyHtml(c){
       <button class="btn danger sm" data-del="${c.id}">Excluir</button></div>`:"";
   return meta+escopo+etapas+fin+docs+obs+actions;
 }
+function respList(e){ return Array.isArray(e.resps)?e.resps:(e.resp?[e.resp]:[]); }
 function stageRow(c,e,i){
   const done=isDone(e.status);
-  const resp = ROLE==="gestao"
-    ? `<select class="st-select resp-sel" data-resp="${c.id}:${i}"><option value="">— responsável</option>${MEMBROS.map(m=>`<option value="${esc(m.nome)}" ${e.resp===m.nome?"selected":""}>${esc(m.nome)}</option>`).join("")}</select>`
-    : (e.resp?`<span class="resp-chip">👤 ${esc(e.resp)}</span>`:`<span class="resp-chip vazio">sem responsável</span>`);
-  return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>
-  ${resp}
-  <select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;
+  const resps=respList(e);
+  let respHtml;
+  if(ROLE==="gestao"){
+    const chips=resps.map(r=>`<span class="resp-chip">${esc(r)}<button class="rx" data-respdel="${c.id}:${i}:${esc(r)}" title="remover">×</button></span>`).join("");
+    const opts=MEMBROS.filter(m=>!resps.includes(m.nome)).map(m=>`<option value="${esc(m.nome)}">${esc(m.nome)}</option>`).join("");
+    respHtml=`<span class="resp-wrap">${chips}<select class="st-select resp-add" data-respadd="${c.id}:${i}"><option value="">+ responsável</option>${opts}</select></span>`;
+  } else {
+    respHtml=resps.length?`<span class="resp-wrap">${resps.map(r=>`<span class="resp-chip">👤 ${esc(r)}</span>`).join("")}</span>`:`<span class="resp-chip vazio">sem responsável</span>`;
+  }
+  return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>${respHtml}<select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;
 }
 function parcelaRow(c,p,i){const t=todayISO(),venc=!p.pago&&p.venc&&p.venc<t;const tag=p.pago?`<span class="pay-tag pago">Pago</span>`:venc?`<span class="pay-tag venc">Vencido</span>`:`<span class="pay-tag aberto">Em aberto</span>`;
   return `<tr><td>${esc(p.label||("Parcela "+(i+1)))}</td><td>${brDate(p.venc)}</td><td class="r mono">${fmt(p.valor)}</td><td class="r">${tag} <button class="link" data-pay="${c.id}:${i}">${p.pago?"desmarcar":"marcar pago"}</button></td></tr>`;}
@@ -801,9 +820,16 @@ function wireBody(el,c){
   el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
     try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
-  el.querySelectorAll("[data-resp]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
-    const [id,i]=sel.dataset.resp.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].resp=sel.value;
-    try{await Store.patchContract(ct);softRefresh(id);}catch(e){toast("Erro ao salvar responsável",true);}});
+  el.querySelectorAll("[data-respadd]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
+    const v=sel.value; if(!v)return;
+    const [id,i]=sel.dataset.respadd.split(":");const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
+    const arr=respList(e); if(!arr.includes(v))arr.push(v); e.resps=arr; delete e.resp;
+    try{await Store.patchContract(ct);softRefresh(id);}catch(err){toast("Erro ao salvar responsável",true);}});
+  el.querySelectorAll("[data-respdel]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();
+    const parts=b.dataset.respdel.split(":");const id=parts[0],i=parts[1],nome=parts.slice(2).join(":");
+    const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
+    e.resps=respList(e).filter(r=>r!==nome); delete e.resp;
+    try{await Store.patchContract(ct);softRefresh(id);}catch(err){toast("Erro ao remover responsável",true);}});
   el.querySelectorAll("[data-auto]").forEach(chk=>chk.onchange=async ev=>{ev.stopPropagation();
     const ct=DB.find(x=>x.id===chk.dataset.auto);ct.autoProgresso=chk.checked;if(chk.checked)ct.progressoManual=null;else if(ct.progressoManual==null)ct.progressoManual=progress(ct);
     try{await Store.patchContract(ct);softRefresh(ct.id);renderKpis();}catch(e){toast("Erro ao salvar",true);}});
