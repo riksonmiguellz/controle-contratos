@@ -120,15 +120,23 @@ body.view-fluxo #fluxoWrap{display:block}
 .viewnav .nav-acao:hover{background:var(--violet-tint)}
 .val-pos{color:var(--ok)}
 .val-neg{color:var(--crit)}
-.fx-chart{display:flex;gap:8px;align-items:flex-end;height:200px;padding:12px 4px;border-bottom:1px solid var(--line);overflow-x:auto}
-.fx-col{flex:1;min-width:46px;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%}
-.fx-bars{flex:1;display:flex;gap:3px;align-items:flex-end;width:100%;justify-content:center}
-.fx-bars i{width:14px;border-radius:4px 4px 0 0;display:block;min-height:2px;transition:height .35s ease}
-.fx-rec{background:var(--ok)}
-.fx-des{background:var(--crit)}
-.fx-lbl{font-size:10.5px;color:var(--ink-soft);font-weight:700;white-space:nowrap}
-.fx-legend{display:flex;gap:18px;font-size:12px;color:var(--ink-soft);margin-top:12px;flex-wrap:wrap}
-.fx-k{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:middle;margin-right:5px}
+.fx-chart{display:flex;gap:6px;align-items:flex-end;height:220px;padding:14px 4px 6px;border-bottom:1px solid var(--line);overflow-x:auto}
+.fx-col{flex:1;min-width:52px;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%;border-radius:10px;padding:6px 2px;transition:background .16s ease}
+.fx-col:hover{background:var(--violet-tint)}
+.fx-val{font-size:10.5px;font-weight:800;color:var(--violet);opacity:0;transform:translateY(4px);transition:.16s;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fx-col:hover .fx-val{opacity:1;transform:translateY(0)}
+.fx-col.fx-neg .fx-val{color:var(--crit)}
+.fx-bars{flex:1;display:flex;gap:4px;align-items:flex-end;width:100%;justify-content:center}
+.fx-bars i{width:13px;border-radius:5px 5px 2px 2px;display:block;min-height:3px;transform-origin:bottom;animation:fxGrow .6s cubic-bezier(.2,.75,.2,1) both;animation-delay:var(--d,0s);transition:filter .16s ease}
+.fx-col:hover .fx-bars i{filter:brightness(1.12) saturate(1.1)}
+.fx-rec{background:linear-gradient(180deg,var(--violet-soft),var(--violet));box-shadow:0 3px 10px -3px color-mix(in srgb,var(--violet) 60%,transparent)}
+.fx-des{background:linear-gradient(180deg,color-mix(in srgb,var(--crit) 45%,#fff),var(--crit));box-shadow:0 3px 10px -3px color-mix(in srgb,var(--crit) 45%,transparent)}
+.fx-lbl{font-size:10.5px;color:var(--ink-soft);font-weight:700;white-space:nowrap;text-transform:capitalize}
+.fx-legend{display:flex;gap:16px;font-size:12px;color:var(--ink-soft);margin-top:14px;flex-wrap:wrap;align-items:center}
+.fx-k{display:inline-block;width:11px;height:11px;border-radius:4px;vertical-align:middle;margin-right:6px}
+@keyframes fxGrow{from{transform:scaleY(0);opacity:.4}to{transform:scaleY(1);opacity:1}}
+.tbl tbody tr{transition:background .15s}
+.tbl tbody tr:hover{background:var(--panel-2)}
 .kpi.goview{cursor:pointer}
 .kpi.goview:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(109,59,245,.16);border-color:color-mix(in srgb,var(--violet) 45%,var(--line))}
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
@@ -832,7 +840,10 @@ function renderFluxo(){
     rows.push({label:d.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),receita,saldo,acum});
   }
   const maxV=Math.max(1,...rows.map(r=>Math.max(r.receita,desp)));
-  const bars=rows.map(r=>`<div class="fx-col" title="${r.label} · receita ${fmt(r.receita)} · despesa ${fmt(desp)}"><div class="fx-bars"><i class="fx-rec" style="height:${(r.receita/maxV*100).toFixed(1)}%"></i><i class="fx-des" style="height:${(desp/maxV*100).toFixed(1)}%"></i></div><span class="fx-lbl">${r.label}</span></div>`).join("");
+  const bars=rows.map((r,ix)=>`<div class="fx-col${r.saldo<0?" fx-neg":""}" style="--d:${(ix*0.045).toFixed(3)}s" title="${r.label} · receita ${fmt(r.receita)} · despesa ${fmt(desp)} · saldo ${fmt(r.saldo)}">
+      <span class="fx-val">${fmt(r.saldo)}</span>
+      <div class="fx-bars"><i class="fx-rec" style="height:${(r.receita/maxV*100).toFixed(1)}%"></i><i class="fx-des" style="height:${(desp/maxV*100).toFixed(1)}%"></i></div>
+      <span class="fx-lbl">${r.label}</span></div>`).join("");
   const tbody=rows.map(r=>`<tr><td>${r.label}</td><td class="r mono">${fmt(r.receita)}</td><td class="r mono">${fmt(desp)}</td><td class="r mono ${r.saldo<0?"val-neg":"val-pos"}">${fmt(r.saldo)}</td><td class="r mono ${r.acum<0?"val-neg":"val-pos"}">${fmt(r.acum)}</td></tr>`).join("");
   const totRec=rows.reduce((s,r)=>s+r.receita,0), totDes=desp*MESES, res=totRec-totDes;
   wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
