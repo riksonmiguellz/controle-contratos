@@ -111,9 +111,24 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .viewnav button:hover{border-color:var(--violet);color:var(--violet)}
 .viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
-#despWrap{display:none}
-body.view-despesas #alertWrap,body.view-despesas #membrosWrap,body.view-despesas #atribWrap,body.view-despesas .kpis,body.view-despesas .toolbar,body.view-despesas #list{display:none}
+#despWrap,#fluxoWrap{display:none}
+body.view-despesas #alertWrap,body.view-despesas #membrosWrap,body.view-despesas #atribWrap,body.view-despesas .kpis,body.view-despesas .toolbar,body.view-despesas #list,
+body.view-fluxo #alertWrap,body.view-fluxo #membrosWrap,body.view-fluxo #atribWrap,body.view-fluxo .kpis,body.view-fluxo .toolbar,body.view-fluxo #list{display:none}
 body.view-despesas #despWrap{display:block}
+body.view-fluxo #fluxoWrap{display:block}
+.viewnav .nav-acao{border-style:dashed;color:var(--violet);border-color:color-mix(in srgb,var(--violet) 40%,transparent)}
+.viewnav .nav-acao:hover{background:var(--violet-tint)}
+.val-pos{color:var(--ok)}
+.val-neg{color:var(--crit)}
+.fx-chart{display:flex;gap:8px;align-items:flex-end;height:200px;padding:12px 4px;border-bottom:1px solid var(--line);overflow-x:auto}
+.fx-col{flex:1;min-width:46px;display:flex;flex-direction:column;align-items:center;gap:7px;height:100%}
+.fx-bars{flex:1;display:flex;gap:3px;align-items:flex-end;width:100%;justify-content:center}
+.fx-bars i{width:14px;border-radius:4px 4px 0 0;display:block;min-height:2px;transition:height .35s ease}
+.fx-rec{background:var(--ok)}
+.fx-des{background:var(--crit)}
+.fx-lbl{font-size:10.5px;color:var(--ink-soft);font-weight:700;white-space:nowrap}
+.fx-legend{display:flex;gap:18px;font-size:12px;color:var(--ink-soft);margin-top:12px;flex-wrap:wrap}
+.fx-k{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:middle;margin-right:5px}
 .kpi.goview{cursor:pointer}
 .kpi.goview:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(109,59,245,.16);border-color:color-mix(in srgb,var(--violet) 45%,var(--line))}
 .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
@@ -194,6 +209,27 @@ body.view-despesas #despWrap{display:block}
 .atrib-etapa{flex:1;min-width:0}
 .atrib-status{font-size:12px;color:var(--ink-soft);white-space:nowrap;font-weight:600}
 .atrib-empty{font-size:13px;color:var(--ink-soft);padding-top:6px}
+.carga{display:flex;align-items:center;gap:10px;margin:2px 0 9px}
+.carga-bar{flex:1;height:6px;background:var(--line);border-radius:6px;overflow:hidden;max-width:170px}
+.carga-bar i{display:block;height:100%;border-radius:6px;transition:.3s}
+.carga-lbl{font-size:11.5px;font-weight:650;color:var(--ink-soft);white-space:nowrap}
+.carga-livre .carga-bar i{background:var(--line-strong)}
+.carga-leve .carga-bar i{background:var(--ok)}
+.carga-medio .carga-bar i{background:var(--warn)}
+.carga-medio .carga-lbl{color:var(--warn)}
+.carga-alto .carga-bar i{background:var(--crit)}
+.carga-alto .carga-lbl{color:var(--crit)}
+/* comentários por etapa */
+.cmt-btn{background:var(--panel);border:1px solid var(--line-strong);border-radius:999px;padding:4px 10px;font-size:11.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+.cmt-btn:hover{border-color:var(--violet);color:var(--violet)}
+.cmt-btn.tem{background:var(--violet-tint);color:var(--violet);border-color:color-mix(in srgb,var(--violet) 30%,transparent)}
+.cmt-list{display:flex;flex-direction:column;gap:10px;max-height:44vh;overflow:auto;margin-bottom:14px}
+.cmt{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.cmt-top{display:flex;justify-content:space-between;gap:10px;font-size:12px;margin-bottom:4px}
+.cmt-autor{font-weight:700;color:var(--violet)}
+.cmt-data{color:var(--ink-soft)}
+.cmt-txt{font-size:13.5px;white-space:pre-wrap}
+.cmt-vazio{color:var(--ink-soft);font-size:13.5px;text-align:center;padding:18px 0}
 .mem-list{display:flex;flex-direction:column;gap:8px}
 .mem-ro{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:14px}
 .mem-ro b{font-weight:700}
@@ -379,10 +415,13 @@ body.team .hide-team{display:none !important}
     <div class="viewnav hide-team" id="viewnav">
       <button data-view="contratos" class="active">📋 Contratos</button>
       <button data-view="despesas">💸 Despesas fixas</button>
+      <button data-view="fluxo">📈 Fluxo de caixa</button>
+      <button id="btnResumo" class="nav-acao">🗒️ Resumo da semana</button>
     </div>
     <div class="kpis" id="kpis"></div>
     <div id="alertWrap"></div>
     <div id="despWrap" class="hide-team"></div>
+    <div id="fluxoWrap" class="hide-team"></div>
     <div id="membrosWrap"></div>
     <div id="atribWrap"></div>
     <div class="toolbar">
@@ -481,10 +520,10 @@ async function ensureSB(){
 function rowToC(r,fin){return {id:r.id,cliente:r.cliente,razao:r.razao,cnpj:r.cnpj,rep:r.rep,status:r.status,
   dataInicio:r.data_inicio,dataFim:r.data_fim,dataAssinatura:r.data_assinatura,prazoTipo:r.prazo_tipo,prazoValor:r.prazo_valor,
   escopo:r.escopo,obs:r.obs,etapas:r.etapas||[],autoProgresso:r.auto_progresso!==false,progresso_manual:r.progresso_manual,
-  progressoManual:r.progresso_manual, anexos:r.anexos||[], fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
+  progressoManual:r.progresso_manual, anexos:r.anexos||[], telefone:r.telefone||"", fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
 function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,rep:c.rep,status:c.status,
   data_inicio:c.dataInicio||null,data_fim:c.dataFim||null,data_assinatura:c.dataAssinatura||null,prazo_tipo:c.prazoTipo,prazo_valor:c.prazoValor?+c.prazoValor:null,
-  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
+  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],telefone:c.telefone||"",auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
 function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
 function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
@@ -727,7 +766,7 @@ document.documentElement.setAttribute("data-theme","light");
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){renderKpis();renderAlertas();renderDesp();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();}
+function render(){renderKpis();renderAlertas();renderDesp();renderFluxo();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();}
 
 function renderAlertas(){
   const wrap=$("#alertWrap"); if(!wrap||!ROLE)return;
@@ -759,18 +798,52 @@ function renderAtrib(){
   if(!membros.length){wrap.innerHTML="";return;}
   const opts=`<option value="todos">Todos</option>`+membros.map(m=>`<option value="${esc(m.nome)}" ${ATRIB_MEMBRO===m.nome?"selected":""}>${esc(m.nome)}${m.apelido?" ("+esc(m.apelido)+")":""}</option>`).join("");
   const show=ATRIB_MEMBRO==="todos"?membros:membros.filter(m=>m.nome===ATRIB_MEMBRO);
+  const cargaDe=nome=>(map[nome]||[]).filter(it=>!isDone(it.status)).length;
+  const sobrecarregados=membros.filter(m=>cargaDe(m.nome)>6).length;
   const blocks=show.map(m=>{
     const items=map[m.nome]||[];
+    const ativas=cargaDe(m.nome);
+    const nv=ativas===0?"livre":(ativas<=3?"leve":(ativas<=6?"medio":"alto"));
+    const lbl={livre:"livre",leve:"tranquilo",medio:"carga média",alto:"sobrecarregado"}[nv];
+    const pct=Math.min(100,Math.round((ativas/8)*100));
+    const carga=`<div class="carga carga-${nv}"><div class="carga-bar"><i style="width:${pct}%"></i></div><span class="carga-lbl">${ativas} em aberto · ${lbl}</span></div>`;
     const lis=items.length?items.map(it=>`<div class="atrib-item"><span class="st-dot dot-${it.status}"></span><span class="atrib-etapa">${esc(it.cli)} <span style="opacity:.5">·</span> ${esc(it.etapa)}</span><span class="atrib-status">${stageLabel(it.status)}</span></div>`).join(""):`<div class="atrib-empty">Sem atribuições ainda</div>`;
-    return `<div class="atrib-block"><div class="atrib-head">${avatarHtml(m)}<b>${esc(m.nome)}</b>${m.apelido?`<span class="apelido">«${esc(m.apelido)}»</span>`:""}<span class="atrib-count">${items.length}</span></div>${lis}</div>`;
+    return `<div class="atrib-block"><div class="atrib-head">${avatarHtml(m)}<b>${esc(m.nome)}</b>${m.apelido?`<span class="apelido">«${esc(m.apelido)}»</span>`:""}<span class="atrib-count">${items.length}</span></div>${carga}${lis}</div>`;
   }).join("");
   wrap.innerHTML=`<div class="card membros-card" style="margin-bottom:22px"><div class="card-head" id="atribHead">
-    <div class="c-title"><h3>Atribuições por pessoa</h3><div class="meta">${ROLE==="gestao"?"Quem está com cada etapa. Filtre por pessoa para ver a carga de cada um.":"Veja o que é seu: escolha seu nome no filtro para ver só as suas etapas."} · ${totalAtrib} no total</div></div><span class="caret">▶</span></div>
+    <div class="c-title"><h3>Atribuições por pessoa</h3><div class="meta">${ROLE==="gestao"?"Quem está com cada etapa. Filtre por pessoa para ver a carga de cada um.":"Veja o que é seu: escolha seu nome no filtro para ver só as suas etapas."} · ${totalAtrib} no total${sobrecarregados?` · <span style="color:var(--crit);font-weight:700">${sobrecarregados} sobrecarregado(s)</span>`:""}</div></div><span class="caret">▶</span></div>
     <div class="card-body"><div class="atrib-filter"><label>Ver de:</label><select id="atribSel">${opts}</select></div>${blocks||'<div class="scope">Nenhuma atribuição ainda.</div>'}</div></div>`;
   const head=wrap.querySelector("#atribHead"); if(head)head.onclick=(e)=>{if(e.target.closest("select"))return;wrap.querySelector(".membros-card").classList.toggle("open");};
   const sel=wrap.querySelector("#atribSel"); if(sel){sel.onclick=e=>e.stopPropagation();sel.onchange=()=>{ATRIB_MEMBRO=sel.value;const wasOpen=wrap.querySelector(".membros-card").classList.contains("open");renderAtrib();if(wasOpen)wrap.querySelector(".membros-card").classList.add("open");};}
 }
 
+function renderFluxo(){
+  const wrap=$("#fluxoWrap"); if(!wrap)return;
+  if(ROLE!=="gestao"){wrap.innerHTML="";return;}
+  const MESES=12, hoje=new Date(), base=new Date(hoje.getFullYear(),hoje.getMonth(),1);
+  const desp=despesaFixaMes();
+  const rows=[]; let acum=0;
+  for(let k=0;k<MESES;k++){
+    const d=new Date(base.getFullYear(),base.getMonth()+k,1);
+    const ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    let receita=0;
+    DB.forEach(c=>{ if(statusEfetivo(c)==="negociacao")return; getFin(c).parcelas.forEach(p=>{ if(p.venc&&p.venc.slice(0,7)===ym)receita+=(+p.valor||0); }); });
+    const saldo=receita-desp; acum+=saldo;
+    rows.push({label:d.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),receita,saldo,acum});
+  }
+  const maxV=Math.max(1,...rows.map(r=>Math.max(r.receita,desp)));
+  const bars=rows.map(r=>`<div class="fx-col" title="${r.label} · receita ${fmt(r.receita)} · despesa ${fmt(desp)}"><div class="fx-bars"><i class="fx-rec" style="height:${(r.receita/maxV*100).toFixed(1)}%"></i><i class="fx-des" style="height:${(desp/maxV*100).toFixed(1)}%"></i></div><span class="fx-lbl">${r.label}</span></div>`).join("");
+  const tbody=rows.map(r=>`<tr><td>${r.label}</td><td class="r mono">${fmt(r.receita)}</td><td class="r mono">${fmt(desp)}</td><td class="r mono ${r.saldo<0?"val-neg":"val-pos"}">${fmt(r.saldo)}</td><td class="r mono ${r.acum<0?"val-neg":"val-pos"}">${fmt(r.acum)}</td></tr>`).join("");
+  const totRec=rows.reduce((s,r)=>s+r.receita,0), totDes=desp*MESES, res=totRec-totDes;
+  wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
+      <div class="c-title"><h3>Fluxo de caixa projetado</h3><div class="meta">Próximos ${MESES} meses · receita prevista (parcelas dos contratos ativos) x despesas fixas mensais</div></div>
+      <div class="money-head"><div class="big mono ${res<0?"val-neg":"val-pos"}">${fmt(res)}</div><div class="lil">resultado do período</div></div></div>
+    <div class="card-body" style="display:block">
+      <div class="fx-chart">${bars}</div>
+      <div class="fx-legend"><span><i class="fx-k fx-rec"></i> receita prevista</span><span><i class="fx-k fx-des"></i> despesa fixa (${fmt(desp)}/mês)</span></div>
+      <div style="overflow-x:auto;margin-top:18px"><table class="tbl"><thead><tr><th>Mês</th><th class="r">Receita prevista</th><th class="r">Despesa fixa</th><th class="r">Saldo</th><th class="r">Acumulado</th></tr></thead><tbody>${tbody}</tbody></table></div>
+    </div></div>`;
+}
 function renderMembros(){
   const wrap=$("#membrosWrap"); if(!wrap)return;
   const rows=MEMBROS.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
@@ -948,8 +1021,11 @@ function setFilter(f){
   const l=$("#list"); if(l && !matchMedia("(prefers-reduced-motion:reduce)").matches) l.scrollIntoView({behavior:"smooth",block:"start"});
 }
 function switchView(v){
-  VIEW=v; document.body.classList.toggle("view-despesas",v==="despesas");
-  const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
+  VIEW=v;
+  document.body.classList.remove("view-despesas","view-fluxo");
+  if(v!=="contratos")document.body.classList.add("view-"+v);
+  if(v==="fluxo")renderFluxo();
+  const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
 }
 function renderList(){
@@ -1043,16 +1119,20 @@ function stageRow(c,e,i){
   }
   let prazoHtml="";
   if(e.prazo){ const dd=diasAte(e.prazo); const cls=done?"praz-done":(dd<0?"praz-late":(dd<=5?"praz-soon":"praz-ok")); const txt=done?brDate(e.prazo):(dd<0?`atrasada ${-dd}d`:(dd===0?"vence hoje":`faltam ${dd}d`)); prazoHtml=`<span class="praz ${cls}" title="Prazo: ${brDate(e.prazo)}">📅 ${txt}</span>`; }
-  return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>${prazoHtml}${respHtml}<select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;
+  const nc=(e.coments||[]).length;
+  const cmtHtml=`<button class="cmt-btn ${nc?"tem":""}" data-cmt="${c.id}:${i}" title="Comentários da etapa">💬 ${nc}</button>`;
+  return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>${prazoHtml}${respHtml}${cmtHtml}<select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;
 }
 function parcelaRow(c,p,i){const t=todayISO(),venc=!p.pago&&p.venc&&p.venc<t;const tag=p.pago?`<span class="pay-tag pago">Pago</span>`:venc?`<span class="pay-tag venc">Vencido</span>`:`<span class="pay-tag aberto">Em aberto</span>`;
-  return `<tr><td>${esc(p.label||("Parcela "+(i+1)))}</td><td>${brDate(p.venc)}</td><td class="r mono">${fmt(p.valor)}</td><td class="r">${tag} <button class="link" data-pay="${c.id}:${i}">${p.pago?"desmarcar":"marcar pago"}</button></td></tr>`;}
+  return `<tr><td>${esc(p.label||("Parcela "+(i+1)))}</td><td>${brDate(p.venc)}</td><td class="r mono">${fmt(p.valor)}</td><td class="r">${tag} <button class="link" data-pay="${c.id}:${i}">${p.pago?"desmarcar":"marcar pago"}</button>${!p.pago?` · <button class="link" data-cob="${c.id}:${i}">cobrar</button>`:""}</td></tr>`;}
 function despRow(c,d,i){return `<tr><td>${esc(d.desc||"—")}</td><td>${brDate(d.data)}</td><td class="r mono">${fmt(d.valor)}</td><td class="r"><button class="link" style="color:var(--crit)" data-deldesp="${c.id}:${i}">remover</button></td></tr>`;}
 
 function wireBody(el,c){
   el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
     try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
+  el.querySelectorAll("[data-cmt]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const[id,i]=b.dataset.cmt.split(":");comentariosModal(id,+i);});
+  el.querySelectorAll("[data-cob]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const[id,i]=b.dataset.cob.split(":");cobrancaModal(id,+i);});
   el.querySelectorAll("[data-respadd]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const v=sel.value; if(!v)return;
     const [id,i]=sel.dataset.respadd.split(":");const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
@@ -1089,7 +1169,7 @@ function softRefresh(id){const c=DB.find(x=>x.id===id);if(!c)return;const old=do
    ============================================================ */
 function contractModal(id){
   const editing=!!id;
-  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}};
+  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",telefone:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}};
   if(!c.fin)c.fin={valorTotal:"",valorMensal:"",parcelas:[],despesas:[]};
   if(!c.anexos)c.anexos=[];
   const m=document.createElement("div");m.className="modal-bg";
@@ -1098,6 +1178,8 @@ function contractModal(id){
       <div class="field"><label>Cliente (nome de exibição)</label><input id="f-cliente" value="${esc(c.cliente)}" placeholder="Ex.: LAVIH SPA — Vila Leopoldina"></div>
       <div class="field-row"><div class="field"><label>Razão social</label><input id="f-razao" value="${esc(c.razao)}"></div><div class="field"><label>CNPJ</label><input id="f-cnpj" value="${esc(c.cnpj)}"></div></div>
       <div class="field-row"><div class="field"><label>Responsável / contato</label><input id="f-rep" value="${esc(c.rep)}"></div>
+        <div class="field"><label>WhatsApp do cliente <span style="font-weight:400;color:var(--ink-soft)">(cobrança)</span></label><input id="f-tel" value="${esc(c.telefone||"")}" placeholder="(11) 90000-0000" inputmode="tel"></div></div>
+      <div class="field-row">
         <div class="field"><label>Status</label><select id="f-status">${["ativo","negociacao","pausado","encerrado"].map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${STATUS_LABEL[s]}</option>`).join("")}</select></div></div>
       <div class="field-row three"><div class="field"><label>Data de início</label><input type="date" id="f-ini" value="${c.dataInicio||""}"></div>
         <div class="field"><label>Data de finalização</label><input type="date" id="f-fim" value="${c.dataFim||""}"></div>
@@ -1141,6 +1223,7 @@ function contractModal(id){
   m.querySelector("#saveC").onclick=async()=>{
     c.cliente=m.querySelector("#f-cliente").value.trim()||"(sem nome)";
     c.razao=m.querySelector("#f-razao").value.trim();c.cnpj=m.querySelector("#f-cnpj").value.trim();c.rep=m.querySelector("#f-rep").value.trim();
+    c.telefone=m.querySelector("#f-tel").value.trim();
     c.status=m.querySelector("#f-status").value;
     c.dataInicio=m.querySelector("#f-ini").value;c.dataFim=m.querySelector("#f-fim").value;c.dataAssinatura=m.querySelector("#f-ass").value;
     c.prazoValor=m.querySelector("#f-prazoV").value;c.prazoTipo=m.querySelector("#f-prazoT").value;
@@ -1151,6 +1234,93 @@ function contractModal(id){
     const btn=m.querySelector("#saveC");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando';
     try{await Store.saveContract(c,{withFin:true});m.remove();render();toast(editing?"Contrato atualizado":"Contrato criado");}
     catch(e){btn.disabled=false;btn.textContent="Salvar";toast("Erro ao salvar: "+(e.message||""),true);}
+  };
+}
+function textoModal(titulo,sub,texto,extraBtn){
+  const bg=document.createElement("div"); bg.className="modal-bg";
+  bg.innerHTML=`<div class="modal" style="max-width:620px"><div class="modal-head"><h2>${esc(titulo)}</h2><button class="close-x" data-x>×</button></div>
+    <div class="modal-body">
+      ${sub?`<div class="scope" style="margin-bottom:12px">${sub}</div>`:""}
+      <textarea id="txOut" rows="16" style="font-size:13.5px;line-height:1.55">${esc(texto)}</textarea>
+      <div id="txMsg" style="font-size:12.5px;color:var(--ok);font-weight:650;margin-top:8px;min-height:16px"></div>
+    </div>
+    <div class="modal-foot">${extraBtn||""}<button class="btn ghost" data-x>Fechar</button><button class="btn" id="txCopy">Copiar texto</button></div></div>`;
+  $("#modalMount").appendChild(bg);
+  bg.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>bg.remove());
+  bg.onclick=e=>{if(e.target===bg)bg.remove();};
+  bg.querySelector("#txCopy").onclick=async()=>{
+    const ta=bg.querySelector("#txOut");
+    try{ await navigator.clipboard.writeText(ta.value); }catch(e){ ta.select(); try{document.execCommand("copy");}catch(_){ } }
+    bg.querySelector("#txMsg").textContent="Copiado. É só colar.";
+  };
+  return bg;
+}
+function resumoModal(){
+  const hoje=new Date();
+  const ativos=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao";});
+  const emNeg=DB.filter(c=>statusEfetivo(c)==="negociacao").length;
+  const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
+  const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
+  const atrasadas=[],prox=[];
+  DB.forEach(c=>{ if(statusEfetivo(c)==="encerrado")return;
+    (c.etapas||[]).forEach(e=>{ if(!e.prazo||isDone(e.status))return; const dd=diasAte(e.prazo); const resp=respList(e).join(", ")||"sem responsável";
+      if(dd<0)atrasadas.push(`- ${c.cliente}: ${e.nome} (${-dd} dias em atraso, com ${resp})`);
+      else if(dd<=7)prox.push(`- ${c.cliente}: ${e.nome} (vence ${brDate(e.prazo)}, com ${resp})`); }); });
+  let t=`Resumo da semana, ${hoje.toLocaleDateString("pt-BR")}\n\n`;
+  t+=`Contratos ativos: ${ativos.length}\n`;
+  if(emNeg)t+=`Em negociação: ${emNeg}\n`;
+  t+=`Entregas concluídas: ${etDone} de ${etTot}\n\n`;
+  t+= atrasadas.length ? `ATRASADAS (${atrasadas.length}):\n${atrasadas.join("\n")}\n\n` : `Nenhuma etapa atrasada. Time no prazo.\n\n`;
+  t+= prox.length ? `VENCE NOS PRÓXIMOS 7 DIAS (${prox.length}):\n${prox.join("\n")}\n\n` : `Nada vencendo nos próximos 7 dias.\n\n`;
+  t+=`Painel: https://riksonmiguellz.github.io/controle-contratos/`;
+  textoModal("Resumo da semana","Texto pronto para colar no grupo. Só operacional, sem valores.",t);
+}
+function cobrancaModal(cid,pi){
+  const c=DB.find(x=>x.id===cid); if(!c)return;
+  const p=getFin(c).parcelas[pi]; if(!p)return;
+  const dd=diasAte(p.venc), nome=c.rep||c.cliente, parc=p.label||"parcela";
+  let msg;
+  if(dd>=0){
+    msg=`Olá, ${nome}, tudo bem?\n\nPassando para lembrar que a ${parc} do nosso contrato, no valor de ${fmt(p.valor)}, vence em ${brDate(p.venc)}.\n\nQualquer dúvida sobre o pagamento, é só me chamar por aqui.\n\nAbraço,\nFortuna AI Advisors`;
+  }else if(-dd<=7){
+    msg=`Olá, ${nome}, tudo bem?\n\nA ${parc} no valor de ${fmt(p.valor)}, com vencimento em ${brDate(p.venc)}, ainda consta em aberto por aqui.\n\nSe o pagamento já tiver sido feito, pode desconsiderar e me mandar o comprovante. Se preferir, reenvio os dados agora.\n\nAbraço,\nFortuna AI Advisors`;
+  }else{
+    msg=`Olá, ${nome}, tudo bem?\n\nA ${parc} no valor de ${fmt(p.valor)} venceu em ${brDate(p.venc)} e segue em aberto, já são ${-dd} dias.\n\nPreciso regularizar essa pendência para mantermos o cronograma das entregas em dia. Consegue me confirmar hoje a previsão de pagamento?\n\nFico no aguardo.\n\nAbraço,\nFortuna AI Advisors`;
+  }
+  const wa=waLink(c.telefone);
+  const btn = wa ? `<a class="btn ghost" href="${wa}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Abrir WhatsApp</a>` : "";
+  const sub = wa ? `<b>${esc(c.cliente)}</b> · ${esc(parc)} · ${fmt(p.valor)}` : `<b>${esc(c.cliente)}</b> · ${esc(parc)} · ${fmt(p.valor)}<br><span style="color:var(--ink-soft)">Cadastre o WhatsApp do cliente no contrato para abrir a conversa direto.</span>`;
+  textoModal("Cobrança",sub,msg,btn);
+}
+function comentariosModal(cid,idx){
+  const c=DB.find(x=>x.id===cid); if(!c)return;
+  const e=(c.etapas||[])[idx]; if(!e)return;
+  e.coments=e.coments||[];
+  const bg=document.createElement("div"); bg.className="modal-bg";
+  bg.innerHTML=`<div class="modal" style="max-width:560px"><div class="modal-head"><h2>Comentários da etapa</h2><button class="close-x" data-x>×</button></div>
+    <div class="modal-body">
+      <div class="scope" style="margin-bottom:14px"><b>${esc(c.cliente)}</b><br>${esc(e.nome)}</div>
+      <div class="cmt-list" id="cmtList"></div>
+      <div class="field"><label>Quem está falando</label><select id="cmtAutor">${MEMBROS.map(m=>`<option value="${esc(m.nome)}">${esc(m.nome)}${m.apelido?" ("+esc(m.apelido)+")":""}</option>`).join("")}</select></div>
+      <div class="field"><label>Comentário</label><textarea id="cmtTxt" rows="3" placeholder="Escreva o alinhamento desta entrega..."></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" data-x>Fechar</button><button class="btn" id="cmtSend">Enviar</button></div></div>`;
+  $("#modalMount").appendChild(bg);
+  const draw=()=>{ const box=bg.querySelector("#cmtList");
+    box.innerHTML=e.coments.length?e.coments.map(k=>`<div class="cmt"><div class="cmt-top"><span class="cmt-autor">${esc(k.autor||"—")}</span><span class="cmt-data">${esc(k.em||"")}</span></div><div class="cmt-txt">${esc(k.txt)}</div></div>`).join(""):`<div class="cmt-vazio">Nenhum comentário ainda. Comece o alinhamento por aqui.</div>`;
+    box.scrollTop=box.scrollHeight; };
+  draw();
+  bg.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>bg.remove());
+  bg.onclick=ev=>{if(ev.target===bg)bg.remove();};
+  bg.querySelector("#cmtSend").onclick=async()=>{
+    const ta=bg.querySelector("#cmtTxt"); const txt=ta.value.trim(); if(!txt)return;
+    const autor=bg.querySelector("#cmtAutor").value||"—";
+    const d=new Date();
+    e.coments.push({autor,txt,em:d.toLocaleDateString("pt-BR")+" "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});
+    const btn=bg.querySelector("#cmtSend"); btn.disabled=true;
+    try{ await Store.patchContract(c); ta.value=""; draw(); softRefresh(cid); }
+    catch(err){ e.coments.pop(); toast("Erro ao enviar comentário",true); }
+    finally{ btn.disabled=false; }
   };
 }
 function despesaModal(id){
@@ -1172,7 +1342,8 @@ function despesaModal(id){
 $("#addBtn").onclick=()=>contractModal(null);
 $("#q").oninput=e=>{QUERY=e.target.value;renderList();};
 $("#filterSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>setFilter(b.dataset.f));
-$("#viewnav").querySelectorAll("button").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+$("#viewnav").querySelectorAll("button[data-view]").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+$("#btnResumo").onclick=()=>resumoModal();
 $("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup-contratos-fortuna-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);};
 $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
