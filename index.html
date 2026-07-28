@@ -238,6 +238,17 @@ body.view-fluxo #fluxoWrap{display:block}
 .cmt-data{color:var(--ink-soft)}
 .cmt-txt{font-size:13.5px;white-space:pre-wrap}
 .cmt-vazio{color:var(--ink-soft);font-size:13.5px;text-align:center;padding:18px 0}
+/* sino de notificações */
+.bell{position:relative}
+.bell.has{border-color:var(--violet);color:var(--violet)}
+.bell-badge{position:absolute;top:-6px;right:-6px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:var(--crit);color:#fff;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--panel);animation:pulseDot 1.8s infinite}
+.notif-list{display:flex;flex-direction:column;gap:8px;max-height:52vh;overflow:auto}
+.notif-item{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel-2)}
+.notif-item.nova{border-left:4px solid var(--violet);background:var(--violet-tint)}
+.notif-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:14px}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--violet);flex-shrink:0}
+.notif-etapa{font-size:13px;color:var(--ink);margin-top:2px}
+.notif-quando{font-size:11.5px;color:var(--ink-soft);margin-top:4px}
 .mem-list{display:flex;flex-direction:column;gap:8px}
 .mem-ro{display:flex;justify-content:space-between;gap:12px;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:14px}
 .mem-ro b{font-weight:700}
@@ -442,6 +453,7 @@ body.team .hide-team{display:none !important}
     <span class="pill-role" id="rolePill">—</span>
     <span class="pill-mode" id="modePill">Local</span>
     <div class="spacer"></div>
+    <button class="btn ghost sm bell" id="bellBtn" title="Minhas notificações">🔔<span class="bell-badge hidden" id="bellCount">0</span></button>
     <button class="btn ghost sm hide-team" id="exportBtn">Backup</button>
     <button class="btn ghost sm hide-team" id="importBtn">Importar</button>
     <button class="btn ghost sm" id="printBtn">Imprimir</button>
@@ -503,6 +515,7 @@ const uid=()=>"c"+Math.random().toString(36).slice(2,10);
 const todayISO=()=>new Date().toISOString().slice(0,10);
 const parseISO=s=>s?new Date(s+"T00:00:00"):null;
 const brDate=s=>{if(!s)return "—";const d=parseISO(s);return d&&!isNaN(d)?d.toLocaleDateString("pt-BR"):s;};
+const brDateHora=iso=>{try{const d=new Date(iso);return d.toLocaleDateString("pt-BR")+" "+d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});}catch(e){return "";}};
 const addMonths=(iso,m)=>{const d=parseISO(iso);if(!d)return null;d.setMonth(d.getMonth()+m);return d.toISOString().slice(0,10);};
 const addDays=(iso,n)=>{const d=parseISO(iso);if(!d)return null;d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);};
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
@@ -515,6 +528,9 @@ const STATUS_LABEL={ativo:"Ativo",negociacao:"Em negociação",andamento:"Em and
 let DB=[];            // array de contratos (com .fin quando gestão)
 let DESP=[];          // despesas fixas mensais (só gestão)
 let MEMBROS=[];       // equipe / responsáveis (visível a todos)
+let NOTIF=[];         // notificações de atribuição
+let EU="";            // "quem sou eu" (persistido) para as notificações
+try{ EU=localStorage.getItem("fortuna_eu")||""; }catch(e){}
 let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="todos", QUERY="";
@@ -565,6 +581,7 @@ function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,r
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
 function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
 function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
+function rowToN(r){return {id:r.id,membro:r.membro,tipo:r.tipo||"atribuicao",contratoId:r.contrato_id,contrato:r.contrato,etapa:r.etapa,criadoEm:r.criado_em,lida:!!r.lida};}
 function rowToM(r){return {id:r.id,nome:r.nome,apelido:r.apelido||"",nomeCompleto:r.nome_completo||"",funcao:r.funcao||"",foto:r.foto||"",whatsapp:r.whatsapp||"",email:r.email||"",aprovado:r.aprovado!==false,ordem:r.ordem||0};}
 function mToRow(m){return {id:m.id,nome:m.nome||"",apelido:m.apelido||"",nome_completo:m.nomeCompleto||"",funcao:m.funcao||"",foto:m.foto||"",whatsapp:m.whatsapp||"",email:m.email||"",aprovado:m.aprovado!==false,ordem:m.ordem||0};}
 function seedMembros(){const b=(id,nome,apelido,funcao,ordem)=>({id,nome,apelido,nomeCompleto:"",funcao,foto:"",whatsapp:"",email:"",aprovado:true,ordem});return [
@@ -623,6 +640,7 @@ const Store={
     sb.channel("rt-fin").on("postgres_changes",{event:"*",schema:"public",table:"contract_finance"},()=>{ if(SESSION) fromOthers(); }).subscribe();
     sb.channel("rt-desp").on("postgres_changes",{event:"*",schema:"public",table:"despesas_fixas"},()=>{ if(SESSION) fromOthers(); }).subscribe();
     sb.channel("rt-mem").on("postgres_changes",{event:"*",schema:"public",table:"membros"},fromOthers).subscribe();
+    sb.channel("rt-notif").on("postgres_changes",{event:"*",schema:"public",table:"notificacoes"},()=>{ if(Date.now()-lastLocalWrite>1500)this.reload().then(()=>{renderBell&&renderBell();}).catch(()=>{}); }).subscribe();
   },
   persistLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify(DB));}catch(e){}},
   persistDesp(){try{localStorage.setItem(LS_KEY+"_desp",JSON.stringify(DESP));}catch(e){}},
@@ -640,7 +658,19 @@ const Store={
     } else { DESP=[]; }
     const {data:ms}=await sb.from("membros").select("*").order("ordem",{ascending:true});
     MEMBROS=(ms||[]).map(rowToM);
+    const {data:ns}=await sb.from("notificacoes").select("*").order("criado_em",{ascending:false}).limit(300);
+    NOTIF=(ns||[]).map(rowToN);
     DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
+  },
+  async criarNotif(membro,c,etapaNome){
+    if(!membro)return;
+    const n={id:uid()+"_"+Math.random().toString(36).slice(2,7),membro,tipo:"atribuicao",contrato_id:c.id,contrato:c.cliente,etapa:etapaNome,lida:false,criado_em:new Date().toISOString()};
+    NOTIF.unshift(rowToN(n));
+    if(CLOUD){ try{ await sb.from("notificacoes").insert(n); }catch(e){} }
+  },
+  async marcarLidas(membro){
+    NOTIF.forEach(n=>{ if(n.membro===membro)n.lida=true; });
+    if(CLOUD){ try{ await sb.from("notificacoes").update({lida:true}).eq("membro",membro).eq("lida",false); }catch(e){} }
   },
   async saveMembro(m){
     lastLocalWrite=Date.now();
@@ -804,7 +834,40 @@ document.documentElement.setAttribute("data-theme","light");
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){renderKpis();renderAlertas();renderDesp();renderFluxo();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();}
+function render(){renderKpis();renderAlertas();renderDesp();renderFluxo();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();renderBell();}
+
+function renderBell(){
+  const el=$("#bellCount"); if(!el)return;
+  const n = EU ? NOTIF.filter(x=>x.membro===EU && !x.lida).length : 0;
+  el.textContent = n>99?"99+":String(n);
+  el.classList.toggle("hidden", n===0);
+  const btn=$("#bellBtn"); if(btn)btn.classList.toggle("has", n>0);
+}
+function notifModal(){
+  const bg=document.createElement("div"); bg.className="modal-bg";
+  const membros=MEMBROS.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  const opts=`<option value="">— selecione seu nome —</option>`+membros.map(m=>`<option value="${esc(m.nome)}" ${EU===m.nome?"selected":""}>${esc(m.nome)}${m.apelido?" ("+esc(m.apelido)+")":""}</option>`).join("");
+  bg.innerHTML=`<div class="modal" style="max-width:480px"><div class="modal-head"><h2>🔔 Minhas notificações</h2><button class="close-x" data-x>×</button></div>
+    <div class="modal-body">
+      <div class="field"><label>Quem é você?</label><select id="euSel">${opts}</select></div>
+      <div id="notifList"></div>
+    </div>
+    <div class="modal-foot"><button class="btn ghost" id="notifClear">Marcar todas como lidas</button><button class="btn" data-x>Fechar</button></div></div>`;
+  $("#modalMount").appendChild(bg);
+  bg.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>bg.remove());
+  bg.onclick=e=>{if(e.target===bg)bg.remove();};
+  const drawList=()=>{
+    const box=bg.querySelector("#notifList");
+    if(!EU){ box.innerHTML=`<div class="cmt-vazio">Escolha seu nome acima para ver o que foi atribuído a você.</div>`; return; }
+    const mine=NOTIF.filter(n=>n.membro===EU).slice(0,60);
+    if(!mine.length){ box.innerHTML=`<div class="cmt-vazio">Nenhuma atribuição por enquanto.</div>`; return; }
+    box.innerHTML=`<div class="notif-list">`+mine.map(n=>`<div class="notif-item ${n.lida?"":"nova"}"><div class="notif-top"><b>${esc(n.contrato)}</b>${n.lida?"":`<span class="notif-dot"></span>`}</div><div class="notif-etapa">${esc(n.etapa||"")}</div><div class="notif-quando">${n.criadoEm?brDateHora(n.criadoEm):""}</div></div>`).join("")+`</div>`;
+  };
+  const euSel=bg.querySelector("#euSel");
+  euSel.onchange=()=>{ EU=euSel.value; try{localStorage.setItem("fortuna_eu",EU);}catch(e){} drawList(); renderBell(); };
+  drawList();
+  bg.querySelector("#notifClear").onclick=async()=>{ if(!EU)return; lastLocalWrite=Date.now(); const b=bg.querySelector("#notifClear"); b.disabled=true; try{ await Store.marcarLidas(EU); }catch(e){} drawList(); renderBell(); b.disabled=false; };
+}
 
 function renderAlertas(){
   const wrap=$("#alertWrap"); if(!wrap||!ROLE)return;
@@ -1205,8 +1268,8 @@ function wireBody(el,c){
   el.querySelectorAll("[data-respadd]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const v=sel.value; if(!v)return;
     const [id,i]=sel.dataset.respadd.split(":");const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
-    const arr=respList(e); if(!arr.includes(v))arr.push(v); e.resps=arr; delete e.resp;
-    try{await Store.patchContract(ct);softRefresh(id);}catch(err){toast("Erro ao salvar responsável",true);}});
+    const arr=respList(e); if(arr.includes(v)){return;} arr.push(v); e.resps=arr; delete e.resp;
+    try{await Store.patchContract(ct);await Store.criarNotif(v,ct,e.nome);softRefresh(id);renderBell();toast(v+" foi notificado da atribuição");}catch(err){toast("Erro ao salvar responsável",true);}});
   el.querySelectorAll("[data-respdel]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();
     const parts=b.dataset.respdel.split(":");const id=parts[0],i=parts[1],nome=parts.slice(2).join(":");
     const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
@@ -1424,6 +1487,7 @@ $("#q").oninput=e=>{QUERY=e.target.value;renderList();};
 $("#filterSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>setFilter(b.dataset.f));
 $("#viewnav").querySelectorAll("button[data-view]").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 $("#btnResumo").onclick=()=>resumoModal();
+$("#bellBtn").onclick=()=>notifModal();
 $("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup-contratos-fortuna-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);};
 $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
