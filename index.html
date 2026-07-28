@@ -295,6 +295,11 @@ body.view-fluxo #fluxoWrap{display:block}
 .praz.praz-soon{background:var(--warn-tint);color:var(--warn)}
 .praz.praz-late{background:var(--crit-tint);color:var(--crit)}
 .praz.praz-done{background:var(--ok-tint);color:var(--ok)}
+.prazo-edit{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.st-prazo{width:auto;padding:5px 8px;font-size:12px;border-radius:8px;background:var(--panel-2);border:1px dashed var(--line-strong);color:var(--ink);cursor:pointer}
+.st-prazo:hover{border-color:var(--violet);border-style:solid}
+.praz-x{border:none;background:var(--line);color:var(--ink-soft);width:18px;height:18px;border-radius:50%;font-size:13px;line-height:1;cursor:pointer;padding:0;display:inline-flex;align-items:center;justify-content:center}
+.praz-x:hover{background:var(--crit);color:#fff}
 /* alertas */
 .alert-none{background:var(--ok-tint);color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 25%,transparent);border-radius:12px;padding:12px 16px;font-weight:650;font-size:13.5px;margin-bottom:22px}
 .alert-card{margin-bottom:22px;border-color:color-mix(in srgb,var(--warn) 30%,var(--line))}
@@ -1171,8 +1176,11 @@ function stageRow(c,e,i){
   } else {
     respHtml=resps.length?`<span class="resp-wrap">${resps.map(r=>`<span class="resp-chip">👤 ${esc(r)}</span>`).join("")}</span>`:`<span class="resp-chip vazio">sem responsável</span>`;
   }
-  let prazoHtml="";
-  if(e.prazo){ const dd=diasAte(e.prazo); const cls=done?"praz-done":(dd<0?"praz-late":(dd<=5?"praz-soon":"praz-ok")); const txt=done?brDate(e.prazo):(dd<0?`atrasada ${-dd}d`:(dd===0?"vence hoje":`faltam ${dd}d`)); prazoHtml=`<span class="praz ${cls}" title="Prazo: ${brDate(e.prazo)}">📅 ${txt}</span>`; }
+  let chip="";
+  if(e.prazo){ const dd=diasAte(e.prazo); const cls=done?"praz-done":(dd<0?"praz-late":(dd<=5?"praz-soon":"praz-ok")); const txt=done?brDate(e.prazo):(dd<0?`atrasada ${-dd}d`:(dd===0?"vence hoje":`faltam ${dd}d`)); chip=`<span class="praz ${cls}" title="Prazo: ${brDate(e.prazo)}">📅 ${txt}</span>`; }
+  const prazoHtml = ROLE==="gestao"
+    ? `<span class="prazo-edit">${chip}<input type="date" class="st-prazo" data-prazo="${c.id}:${i}" value="${e.prazo||""}" title="Definir prazo desta demanda">${e.prazo?`<button class="praz-x" data-prazoclr="${c.id}:${i}" title="Limpar prazo">×</button>`:""}</span>`
+    : (chip||`<span class="praz praz-ok" style="opacity:.6">sem prazo</span>`);
   const nc=(e.coments||[]).length;
   const cmtHtml=`<button class="cmt-btn ${nc?"tem":""}" data-cmt="${c.id}:${i}" title="Comentários da etapa">💬 ${nc}</button>`;
   return `<div class="stage ${done?'done':''}"><span class="st-dot dot-${e.status}"></span><span class="name">${esc(e.nome)}</span>${prazoHtml}${respHtml}${cmtHtml}<select class="st-select" data-stage="${c.id}:${i}">${STAGE_STATES.map(s=>`<option value="${s.v}" ${s.v===e.status?"selected":""}>${s.t}</option>`).join("")}</select></div>`;
@@ -1185,6 +1193,13 @@ function wireBody(el,c){
   el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
     try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
+  el.querySelectorAll("[data-prazo]").forEach(inp=>inp.onchange=async ev=>{ev.stopPropagation();
+    const [id,i]=inp.dataset.prazo.split(":");const ct=DB.find(x=>x.id===id);
+    if(inp.value)ct.etapas[+i].prazo=inp.value; else delete ct.etapas[+i].prazo;
+    try{await Store.patchContract(ct);softRefresh(id);renderAlertas();}catch(err){toast("Erro ao salvar prazo",true);}});
+  el.querySelectorAll("[data-prazoclr]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();
+    const [id,i]=b.dataset.prazoclr.split(":");const ct=DB.find(x=>x.id===id);delete ct.etapas[+i].prazo;
+    try{await Store.patchContract(ct);softRefresh(id);renderAlertas();}catch(err){toast("Erro ao limpar prazo",true);}});
   el.querySelectorAll("[data-cmt]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const[id,i]=b.dataset.cmt.split(":");comentariosModal(id,+i);});
   el.querySelectorAll("[data-cob]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const[id,i]=b.dataset.cob.split(":");cobrancaModal(id,+i);});
   el.querySelectorAll("[data-respadd]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
