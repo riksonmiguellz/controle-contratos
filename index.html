@@ -887,10 +887,10 @@ function renderMembros(){
   if(!rows.length && ROLE!=="gestao"){ wrap.innerHTML=""; return; }
   const pendentes=rows.filter(m=>!m.aprovado).length;
   const cards=rows.map(m=>memCardHtml(m)).join("")||`<div class="scope" style="grid-column:1/-1">Nenhum membro ainda.</div>`;
-  const addBtn = ROLE==="gestao" ? `<button class="btn ghost sm" id="addMem" style="margin-top:12px">+ Adicionar membro</button>` : "";
+  const addBtn = `<button class="btn ${ROLE==="gestao"?"ghost":""} sm" id="addMem" style="margin-top:12px">${ROLE==="gestao"?"+ Adicionar membro":"+ Cadastrar-me na equipe"}</button>`;
   const metaTxt = ROLE==="gestao"
     ? `Perfis da equipe — foto, contato e função. Edições da equipe entram como <b>pendentes</b> até você aprovar.${pendentes?` · <span style="color:var(--warn);font-weight:700">${pendentes} pendente${pendentes>1?"s":""}</span>`:""}`
-    : `Fale direto com cada responsável. Toque em <b>Editar</b> no seu card para completar seus dados (passa por aprovação da gestão).`;
+    : `É novo por aqui? Toque em <b>Cadastrar-me na equipe</b>. Já tem card? Toque em <b>Editar</b> para completar seus dados. Tudo passa pela aprovação da gestão.`;
   wrap.innerHTML=`<div class="card membros-card" style="margin-bottom:22px">
     <div class="card-head" id="memHead">
       <div class="c-title"><h3>Equipe${pendentes&&ROLE==="gestao"?` <span class="pending-badge">${pendentes} pendente${pendentes>1?"s":""}</span>`:""}</h3><div class="meta">${metaTxt}</div></div>
