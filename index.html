@@ -48,6 +48,11 @@ h1,h2,h3{margin:0;letter-spacing:-.015em;text-wrap:balance;font-family:"Montserr
 .gate::before{display:none}
 .gate-card{position:relative;z-index:2;background:rgba(255,255,255,.82);backdrop-filter:blur(14px) saturate(1.1);border:1px solid rgba(109,59,245,.14);box-shadow:0 24px 70px -26px rgba(109,59,245,.32), 0 2px 10px rgba(25,21,38,.05)}
 /* facepile da equipe */
+.gate-user{display:flex;align-items:center;gap:11px;margin:4px 0 12px;padding:10px 12px;border:1px solid color-mix(in srgb,var(--violet) 25%,var(--line));border-radius:12px;background:var(--violet-tint)}
+.gate-user .avatar{width:42px;height:42px;flex-shrink:0}
+.gate-user .gu-info{min-width:0;text-align:left}
+.gate-user .gu-nome{font-weight:700;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gate-user .gu-mail{font-size:12px;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .gate-team{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
 .gate-team-label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);font-weight:700;margin-bottom:11px;display:flex;align-items:center;gap:7px;justify-content:center}
 .gate-avatars{display:flex;flex-wrap:wrap;justify-content:center;gap:0}
@@ -437,6 +442,7 @@ body.team .hide-team{display:none !important}
     <h1>Controle de Contratos</h1>
     <div class="sub">Acompanhamento de contratos, prazos e entregas.</div>
     <div id="modeTag" class="mode-tag">💾 Modo local</div>
+    <div id="gateUser" class="gate-user hidden"></div>
     <div class="loginform">
       <input type="email" id="email" placeholder="Seu e-mail" autocomplete="username">
       <input type="password" id="pw" placeholder="Sua senha" autocomplete="current-password">
@@ -587,7 +593,7 @@ function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.
 function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
 function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
 function rowToN(r){return {id:r.id,membro:r.membro,tipo:r.tipo||"atribuicao",contratoId:r.contrato_id,contrato:r.contrato,etapa:r.etapa,criadoEm:r.criado_em,lida:!!r.lida};}
-function rowToM(r){return {id:r.id,nome:r.nome,apelido:r.apelido||"",nomeCompleto:r.nome_completo||"",funcao:r.funcao||"",foto:r.foto||"",whatsapp:r.whatsapp||"",email:r.email||"",aprovado:r.aprovado!==false,ordem:r.ordem||0};}
+function rowToM(r){return {id:r.id,nome:r.nome,apelido:r.apelido||"",nomeCompleto:r.nome_completo||"",funcao:r.funcao||"",foto:r.foto||"",whatsapp:r.whatsapp||"",email:r.email||"",loginEmail:r.login_email||"",aprovado:r.aprovado!==false,ordem:r.ordem||0};}
 function mToRow(m){return {id:m.id,nome:m.nome||"",apelido:m.apelido||"",nome_completo:m.nomeCompleto||"",funcao:m.funcao||"",foto:m.foto||"",whatsapp:m.whatsapp||"",email:m.email||"",aprovado:m.aprovado!==false,ordem:m.ordem||0};}
 function seedMembros(){const b=(id,nome,apelido,funcao,ordem)=>({id,nome,apelido,nomeCompleto:"",funcao,foto:"",whatsapp:"",email:"",aprovado:true,ordem});return [
   b("c4qta8pc9","Miguel","Miguelito","Head e Gestor Geral",1),
@@ -820,6 +826,14 @@ function updateCloud(){
   const pill=$("#modePill");
   if(pill) pill.textContent = !CLOUD?"💾 Local":((CONNECTED&&navigator.onLine)?"☁︎ Conectado":"☁︎ Offline");
 }
+function renderGateUser(){
+  const el=$("#gateUser"); if(!el)return;
+  const email=($("#email")?$("#email").value:"").trim().toLowerCase();
+  const m = email ? MEMBROS.find(x=>((x.loginEmail||"").toLowerCase()===email)||((x.email||"").toLowerCase()===email)) : null;
+  if(!m){ el.className="gate-user hidden"; el.innerHTML=""; return; }
+  el.className="gate-user";
+  el.innerHTML=`${avatarHtml(m)}<div class="gu-info"><div class="gu-nome">${esc(m.nome)}${m.apelido?` «${esc(m.apelido)}»`:""}</div><div class="gu-mail">${esc(email)}</div></div>`;
+}
 function renderGateTeam(){
   const el=$("#gateTeam"); if(!el)return;
   const membros=MEMBROS.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
@@ -834,9 +848,10 @@ function refreshModeUI(){
 $("#pwGo").onclick=doLogin;
 $("#pw").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 $("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();});
+$("#email").addEventListener("input",renderGateUser);
 async function doLogin(){
   const btn=$("#pwGo");btn.disabled=true;$("#gateErr").textContent="";
-  try{ const role=await Store.loginGestao($("#email").value.trim(),$("#pw").value); enterUI(role); }
+  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); }
   catch(e){ $("#gateErr").textContent=e.message||"Falha no login."; $("#pw").select(); }
   finally{ btn.disabled=false; }
 }
@@ -1601,6 +1616,8 @@ window.BGFX=(function(){
   catch(e){ $("#gateErr").textContent="Aviso: "+(e.message||"falha ao conectar. Verifique a configuração do Supabase."); }
   if(!CLOUD)CONNECTED=true;
   renderGateTeam(); updateCloud();
+  try{ const le=localStorage.getItem("ultimo_email"); if(le && $("#email")) $("#email").value=le; }catch(e){}
+  renderGateUser();
   if(CLOUD && SESSION){ try{ const role=await Store.resolvePapel(); enterUI(role); }catch(e){} }
 })();
 </script>
