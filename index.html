@@ -81,6 +81,10 @@ button{font-family:inherit;cursor:pointer}
 .role-btn .d{font-size:12.5px;color:var(--ink-soft)}
 .pw-row{display:none;margin-top:14px;flex-direction:column;gap:8px}
 .pw-row.show{display:flex}
+.loginform{display:flex;flex-direction:column;gap:10px;margin-top:4px}
+.loginform .btn{width:100%;padding:13px}
+.linkbtn{background:none;border:none;color:var(--violet);font-weight:600;font-size:13px;cursor:pointer;padding:8px;font-family:inherit;margin-top:6px}
+.linkbtn:hover{text-decoration:underline}
 input,select,textarea{font-family:inherit;font-size:14.5px;color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:11px 12px;width:100%}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-offset:1px;border-color:var(--violet)}
 .btn{border:1px solid transparent;border-radius:10px;padding:11px 16px;font-weight:650;font-size:14px;background:var(--violet);color:#fff;transition:.15s;white-space:nowrap}
@@ -111,11 +115,17 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .viewnav button:hover{border-color:var(--violet);color:var(--violet)}
 .viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
-#despWrap,#fluxoWrap{display:none}
+#despWrap,#fluxoWrap,#agendaWrap{display:none}
 body.view-despesas #alertWrap,body.view-despesas #membrosWrap,body.view-despesas #atribWrap,body.view-despesas .kpis,body.view-despesas .toolbar,body.view-despesas #list,
-body.view-fluxo #alertWrap,body.view-fluxo #membrosWrap,body.view-fluxo #atribWrap,body.view-fluxo .kpis,body.view-fluxo .toolbar,body.view-fluxo #list{display:none}
+body.view-fluxo #alertWrap,body.view-fluxo #membrosWrap,body.view-fluxo #atribWrap,body.view-fluxo .kpis,body.view-fluxo .toolbar,body.view-fluxo #list,
+body.view-agenda #alertWrap,body.view-agenda #membrosWrap,body.view-agenda #atribWrap,body.view-agenda .kpis,body.view-agenda .toolbar,body.view-agenda #list{display:none}
 body.view-despesas #despWrap{display:block}
 body.view-fluxo #fluxoWrap{display:block}
+body.view-agenda #agendaWrap{display:block}
+.agenda-frame{width:100%;height:72vh;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
+.agenda-frame iframe{width:100%;height:100%;border:0}
+.agenda-edit{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.agenda-edit input{flex:1;min-width:220px}
 .viewnav .nav-acao{border-style:dashed;color:var(--violet);border-color:color-mix(in srgb,var(--violet) 40%,transparent)}
 .viewnav .nav-acao:hover{background:var(--violet-tint)}
 .val-pos{color:var(--ok)}
@@ -427,22 +437,13 @@ body.team .hide-team{display:none !important}
     <h1>Controle de Contratos</h1>
     <div class="sub">Acompanhamento de contratos, prazos e entregas.</div>
     <div id="modeTag" class="mode-tag">💾 Modo local</div>
-    <div class="roles">
-      <button class="role-btn" id="btnGestao">
-        <span class="ic">🔐</span>
-        <span><span class="t">Entrar com meu acesso</span><br><span class="d">Cada pessoa com seu e-mail e senha</span></span>
-      </button>
-      <div class="pw-row" id="pwRow">
-        <input type="email" id="email" placeholder="Seu e-mail" autocomplete="username" class="hidden">
-        <input type="password" id="pw" placeholder="Sua senha" autocomplete="current-password">
-        <button class="btn" id="pwGo">Entrar</button>
-      </div>
-      <button class="role-btn" id="btnEquipe">
-        <span class="ic">👥</span>
-        <span><span class="t">Ver como equipe (sem login)</span><br><span class="d">Escopo, prazos, progresso e etapas</span></span>
-      </button>
+    <div class="loginform">
+      <input type="email" id="email" placeholder="Seu e-mail" autocomplete="username">
+      <input type="password" id="pw" placeholder="Sua senha" autocomplete="current-password">
+      <button class="btn" id="pwGo">Entrar</button>
     </div>
     <div class="err" id="gateErr"></div>
+    <button type="button" class="linkbtn" id="btnEquipe">ou só acompanhar como equipe (sem login)</button>
     <div id="gateTeam" class="gate-team"></div>
   </div>
 </div>
@@ -463,12 +464,14 @@ body.team .hide-team{display:none !important}
     <input type="file" id="fileIn" accept="application/json" class="hidden">
   </div>
   <div class="wrap">
-    <div class="viewnav hide-team" id="viewnav">
+    <div class="viewnav" id="viewnav">
       <button data-view="contratos" class="active">📋 Contratos</button>
-      <button data-view="despesas">💸 Despesas fixas</button>
-      <button data-view="fluxo">📈 Fluxo de caixa</button>
-      <button id="btnResumo" class="nav-acao">🗒️ Resumo da semana</button>
+      <button data-view="agenda">📅 Agenda</button>
+      <button data-view="despesas" class="hide-team">💸 Despesas fixas</button>
+      <button data-view="fluxo" class="hide-team">📈 Fluxo de caixa</button>
+      <button id="btnResumo" class="nav-acao hide-team">🗒️ Resumo da semana</button>
     </div>
+    <div id="agendaWrap"></div>
     <div class="kpis" id="kpis"></div>
     <div id="alertWrap"></div>
     <div id="despWrap" class="hide-team"></div>
@@ -530,6 +533,7 @@ let DB=[];            // array de contratos (com .fin quando gestão)
 let DESP=[];          // despesas fixas mensais (só gestão)
 let MEMBROS=[];       // equipe / responsáveis (visível a todos)
 let NOTIF=[];         // notificações de atribuição
+let APPCFG={};        // configurações do app (ex.: agenda_url)
 let EU="";            // "quem sou eu" (persistido) para as notificações
 try{ EU=localStorage.getItem("fortuna_eu")||""; }catch(e){}
 let ROLE=null;        // 'gestao' | 'team'
@@ -661,6 +665,8 @@ const Store={
     MEMBROS=(ms||[]).map(rowToM);
     const {data:ns}=await sb.from("notificacoes").select("*").order("criado_em",{ascending:false}).limit(300);
     NOTIF=(ns||[]).map(rowToN);
+    const {data:cfg}=await sb.from("app_config").select("*");
+    APPCFG={}; (cfg||[]).forEach(c=>APPCFG[c.key]=c.value);
     DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
   },
   async criarNotif(membro,c,etapaNome){
@@ -672,6 +678,12 @@ const Store={
   async marcarLidas(membro){
     NOTIF.forEach(n=>{ if(n.membro===membro)n.lida=true; });
     if(CLOUD){ try{ await sb.from("notificacoes").update({lida:true}).eq("membro",membro).eq("lida",false); }catch(e){} }
+  },
+  async saveCfg(key,value){
+    APPCFG[key]=value; lastLocalWrite=Date.now();
+    if(!CLOUD)return;
+    const {error}=await sb.from("app_config").upsert({key,value,updated_at:new Date().toISOString()});
+    if(error)throw error;
   },
   async saveMembro(m){
     lastLocalWrite=Date.now();
@@ -819,7 +831,6 @@ function refreshModeUI(){
   updateCloud();
   $("#email").classList.toggle("hidden",!CLOUD);
 }
-$("#btnGestao").onclick=()=>{$("#pwRow").classList.add("show");(CLOUD&&!$("#email").value?$("#email"):$("#pw")).focus();};
 $("#pwGo").onclick=doLogin;
 $("#pw").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 $("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();});
@@ -841,7 +852,7 @@ function enterUI(role){
   render();
   const w=$(".wrap"); if(w){ w.classList.remove("reveal"); void w.offsetWidth; w.classList.add("reveal"); }
 }
-$("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#pwRow").classList.remove("show");$("#gateErr").textContent=""; try{window.BGFX&&window.BGFX.start();}catch(e){} };
+$("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#gateErr").textContent=""; try{window.BGFX&&window.BGFX.start();}catch(e){} };
 
 /* ---------- tema: sempre claro ---------- */
 document.documentElement.setAttribute("data-theme","light");
@@ -849,7 +860,7 @@ document.documentElement.setAttribute("data-theme","light");
 /* ============================================================
    RENDER
    ============================================================ */
-function render(){renderKpis();renderAlertas();renderDesp();renderFluxo();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();renderBell();}
+function render(){renderKpis();renderAlertas();renderDesp();renderFluxo();renderAgenda();renderMembros();renderAtrib();renderList();renderFoot();renderGateTeam();renderBell();}
 
 function renderBell(){
   const el=$("#bellCount"); if(!el)return;
@@ -963,6 +974,18 @@ function renderFluxo(){
       <div class="fx-legend"><span><i class="fx-k fx-rec"></i> receita prevista</span><span><i class="fx-k fx-des"></i> despesa fixa (${fmt(desp)}/mês)</span></div>
       <div style="overflow-x:auto;margin-top:18px"><table class="tbl"><thead><tr><th>Mês</th><th class="r">Receita prevista</th><th class="r">Despesa fixa</th><th class="r">Saldo</th><th class="r">Acumulado</th></tr></thead><tbody>${tbody}</tbody></table></div>
     </div></div>`;
+}
+function renderAgenda(){
+  const wrap=$("#agendaWrap"); if(!wrap)return;
+  const url=(APPCFG.agenda_url||"").trim();
+  const inner = url
+    ? `<div class="agenda-frame"><iframe src="${esc(url)}" loading="lazy" title="Agenda Fortuna"></iframe></div>`
+    : `<div class="scope" style="text-align:center;padding:34px 18px"><div style="font-size:15px;font-weight:650;margin-bottom:8px">Agenda ainda não conectada</div><div style="color:var(--ink-soft);font-size:13.5px">${ROLE==="gestao"?"Cole abaixo o link de incorporação (embed) da agenda compartilhada do Google e salve.":"A gestão vai conectar a agenda em breve."}</div></div>`;
+  const editor = ROLE==="gestao" ? `<div class="agenda-edit"><input id="agUrl" placeholder="Cole o link 'incorporar/embed' da agenda do Google" value="${esc(url)}"><button class="btn sm" id="agSave">Salvar</button></div>` : "";
+  wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
+      <div class="c-title"><h3>Agenda da Fortuna</h3><div class="meta">Calendário compartilhado do time — também aparece na agenda pessoal de quem foi convidado no Google.</div></div></div>
+    <div class="card-body" style="display:block">${editor}${inner}</div></div>`;
+  const save=wrap.querySelector("#agSave"); if(save)save.onclick=async()=>{ const v=wrap.querySelector("#agUrl").value.trim(); try{ await Store.saveCfg("agenda_url",v); renderAgenda(); toast("Agenda salva"); }catch(e){ toast("Erro ao salvar",true); } };
 }
 function renderMembros(){
   const wrap=$("#membrosWrap"); if(!wrap)return;
@@ -1142,9 +1165,10 @@ function setFilter(f){
 }
 function switchView(v){
   VIEW=v;
-  document.body.classList.remove("view-despesas","view-fluxo");
+  document.body.classList.remove("view-despesas","view-fluxo","view-agenda");
   if(v!=="contratos")document.body.classList.add("view-"+v);
   if(v==="fluxo")renderFluxo();
+  if(v==="agenda")renderAgenda();
   const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
 }
