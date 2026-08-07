@@ -107,6 +107,12 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .topbar .spacer{flex:1}
 .pill-role{font-size:12px;font-weight:650;padding:5px 11px;border-radius:999px;background:var(--violet-tint);color:var(--violet);border:1px solid color-mix(in srgb,var(--violet) 30%,transparent)}
 .pill-mode{font-size:11.5px;font-weight:650;padding:5px 10px;border-radius:999px;border:1px solid var(--line-strong);color:var(--ink-soft)}
+.userbadge{display:flex;align-items:center;gap:8px;padding:4px 10px 4px 5px;border-radius:999px;background:var(--violet-tint);border:1px solid color-mix(in srgb,var(--violet) 28%,transparent);max-width:200px}
+.userbadge.hidden{display:none}
+.userbadge .avatar{width:28px;height:28px;font-size:11px}
+.userbadge .ub-info{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.userbadge .ub-nome{font-weight:700;font-size:12.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.userbadge .ub-role{font-size:10px;font-weight:650;letter-spacing:.03em;text-transform:uppercase;color:var(--violet)}
 .wrap{max-width:1180px;margin:0 auto;padding:22px 22px 80px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px}
 .kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
@@ -457,6 +463,7 @@ body.team .hide-team{display:none !important}
 <div id="app" class="hidden">
   <div class="topbar">
     <div class="brand"><span class="bd">F</span> <span class="wordmark">Fortuna<b>&nbsp;AI</b></span> · Contratos</div>
+    <span class="userbadge hidden" id="userBadge"></span>
     <span class="pill-role" id="rolePill">—</span>
     <span class="pill-mode" id="modePill">Local</span>
     <div class="spacer"></div>
@@ -542,6 +549,8 @@ let NOTIF=[];         // notificações de atribuição
 let APPCFG={};        // configurações do app (ex.: agenda_url)
 let EU="";            // "quem sou eu" (persistido) para as notificações
 try{ EU=localStorage.getItem("fortuna_eu")||""; }catch(e){}
+let EU_EMAIL="";      // e-mail do login atual (para identificar o usuário logado)
+try{ EU_EMAIL=localStorage.getItem("ultimo_email")||""; }catch(e){}
 let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
 let FILTER="ativo", QUERY="";
@@ -841,6 +850,25 @@ function renderGateTeam(){
   const shown=membros.slice(0,9);
   el.innerHTML=`<div class="gate-team-label">👥 Equipe · ${membros.length}</div><div class="gate-avatars">${shown.map(m=>`<span class="ga" title="${esc(m.nome)}">${m.foto?`<img src="${esc(m.foto)}" alt="">`:esc(iniciais(m.nomeCompleto||m.nome))}</span>`).join("")}${membros.length>shown.length?`<span class="ga more">+${membros.length-shown.length}</span>`:""}</div>`;
 }
+function currentMembro(){
+  if(EU){ const m=MEMBROS.find(x=>x.nome===EU); if(m)return m; }
+  if(EU_EMAIL){ const e=EU_EMAIL.toLowerCase(); const m=MEMBROS.find(x=>((x.loginEmail||"").toLowerCase()===e)||((x.email||"").toLowerCase()===e)); if(m)return m; }
+  return null;
+}
+function renderUserBadge(){
+  const el=$("#userBadge"); if(!el)return;
+  if(!ROLE){ el.className="userbadge hidden"; el.innerHTML=""; return; }
+  const roleLab = ROLE==="gestao"?"Gestão":"Equipe";
+  const m=currentMembro();
+  if(m){
+    el.className="userbadge"; el.title=(m.loginEmail||m.email||"");
+    el.innerHTML=`${avatarHtml(m)}<span class="ub-info"><span class="ub-nome">${esc(m.nome)}</span><span class="ub-role">${roleLab}</span></span>`;
+  }else{
+    const nome = EU || (EU_EMAIL? EU_EMAIL.split("@")[0] : roleLab);
+    el.className="userbadge"; el.title=EU_EMAIL||"";
+    el.innerHTML=`<span class="avatar">${esc(iniciais(nome))}</span><span class="ub-info"><span class="ub-nome">${esc(nome)}</span><span class="ub-role">${roleLab}</span></span>`;
+  }
+}
 function refreshModeUI(){
   updateCloud();
   $("#email").classList.toggle("hidden",!CLOUD);
@@ -851,17 +879,18 @@ $("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();}
 $("#email").addEventListener("input",renderGateUser);
 async function doLogin(){
   const btn=$("#pwGo");btn.disabled=true;$("#gateErr").textContent="";
-  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); }
+  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); EU_EMAIL=em; try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); }
   catch(e){ $("#gateErr").textContent=e.message||"Falha no login."; $("#pw").select(); }
   finally{ btn.disabled=false; }
 }
-$("#btnEquipe").onclick=async()=>{ try{ if(CLOUD&&SESSION)await Store.logout(); }catch(e){} enterUI("team"); };
+$("#btnEquipe").onclick=async()=>{ try{ if(CLOUD&&SESSION)await Store.logout(); }catch(e){} EU_EMAIL=""; enterUI("team"); };
 function enterUI(role){
   ROLE=role;
   $("#gate").classList.add("hidden");$("#app").classList.remove("hidden");
   try{window.BGFX&&window.BGFX.stop();}catch(e){}
   document.body.classList.toggle("team",role==="team");
   $("#rolePill").textContent = role==="gestao"?"Gestão":"Equipe";
+  renderUserBadge();
   const pc=$("#pwChangeBtn"); if(pc)pc.classList.toggle("hidden", !(CLOUD&&SESSION));
   FILTER="ativo"; QUERY="";
   const seg=$("#filterSeg"); if(seg)seg.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.f==="ativo"));
@@ -869,7 +898,7 @@ function enterUI(role){
   render();
   const w=$(".wrap"); if(w){ w.classList.remove("reveal"); void w.offsetWidth; w.classList.add("reveal"); }
 }
-$("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#gateErr").textContent=""; try{window.BGFX&&window.BGFX.start();}catch(e){} };
+$("#logoutBtn").onclick=async()=>{ try{await Store.logout();}catch(e){} ROLE=null; renderUserBadge(); $("#app").classList.add("hidden");$("#gate").classList.remove("hidden"); $("#pw").value="";$("#gateErr").textContent=""; try{window.BGFX&&window.BGFX.start();}catch(e){} };
 
 /* ---------- tema: sempre claro ---------- */
 document.documentElement.setAttribute("data-theme","light");
@@ -907,7 +936,7 @@ function notifModal(){
     box.innerHTML=`<div class="notif-list">`+mine.map(n=>`<div class="notif-item ${n.lida?"":"nova"}"><div class="notif-top"><b>${esc(n.contrato)}</b>${n.lida?"":`<span class="notif-dot"></span>`}</div><div class="notif-etapa">${esc(n.etapa||"")}</div><div class="notif-quando">${n.criadoEm?brDateHora(n.criadoEm):""}</div></div>`).join("")+`</div>`;
   };
   const euSel=bg.querySelector("#euSel");
-  euSel.onchange=()=>{ EU=euSel.value; try{localStorage.setItem("fortuna_eu",EU);}catch(e){} drawList(); renderBell(); };
+  euSel.onchange=()=>{ EU=euSel.value; try{localStorage.setItem("fortuna_eu",EU);}catch(e){} drawList(); renderBell(); renderUserBadge(); };
   drawList();
   bg.querySelector("#notifClear").onclick=async()=>{ if(!EU)return; lastLocalWrite=Date.now(); const b=bg.querySelector("#notifClear"); b.disabled=true; try{ await Store.marcarLidas(EU); }catch(e){} drawList(); renderBell(); b.disabled=false; };
 }
@@ -1373,7 +1402,7 @@ function softRefresh(id){
    ============================================================ */
 function contractModal(id){
   const editing=!!id;
-  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",telefone:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}};
+  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",telefone:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:"",valorMensal:"",parcelas:[],despesas:[]}};
   if(!c.fin)c.fin={valorTotal:"",valorMensal:"",parcelas:[],despesas:[]};
   if(!c.anexos)c.anexos=[];
   const m=document.createElement("div");m.className="modal-bg";
