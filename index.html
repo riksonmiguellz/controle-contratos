@@ -1158,10 +1158,11 @@ function renderKpis(){
   h+=kpi("Em negociação",emNeg,"no funil de fechamento","",false,"negociacao");
   h+=kpi("Etapas concluídas",`${etDone}<span style="font-size:14px;color:var(--ink-soft)">/${etTot}</span>`,"entregas marcadas");
   if(ROLE==="gestao"){
-    const totC=DB.filter(c=>statusEfetivo(c)!=="pausado").reduce((s,c)=>s+getFin(c).valorTotal,0);
+    const carteira=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao";});
+    const totC=carteira.reduce((s,c)=>s+getFin(c).valorTotal,0);
     const totMes=ativos.reduce((s,c)=>s+getFin(c).valorMensal,0);
     const totR=DB.reduce((s,c)=>s+recebido(c),0);
-    const totAR=DB.reduce((s,c)=>s+aReceber(c),0);
+    const totAR=carteira.reduce((s,c)=>s+aReceber(c),0);
     const despFixMes=despesaFixaMes();
     h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent",true);
     h+=kpi("A receber / mês",fmt(totMes),"recorrente (ativos)","",true);
@@ -1236,7 +1237,8 @@ function cronoHtml(c){
   const t0=parseISO(ini).getTime(), t1=parseISO(fim).getTime(), span=Math.max(1,t1-t0);
   const pct=iso=>{const p=parseISO(iso); if(!p||isNaN(p))return null; return Math.max(0,Math.min(100,((p.getTime()-t0)/span)*100));};
   const hoje=pct(todayISO());
-  const marks=comPrazo.map(e=>{const x=pct(e.prazo); if(x==null)return ""; const st=isDone(e.status)?"entregue":(etapaAtrasada(e)?"atrasada":"pend"); return `<span class="cron-mk cron-${st}" style="left:${x}%" title="${esc(e.nome)} · ${brDate(e.prazo)}"></span>`;}).join("");
+  const congelado=["pausado","negociacao","encerrado"].includes(statusEfetivo(c));
+  const marks=comPrazo.map(e=>{const x=pct(e.prazo); if(x==null)return ""; const st=isDone(e.status)?"entregue":((!congelado&&etapaAtrasada(e))?"atrasada":"pend"); return `<span class="cron-mk cron-${st}" style="left:${x}%" title="${esc(e.nome)} · ${brDate(e.prazo)}"></span>`;}).join("");
   return `<div class="sec"><div class="h"><span>Cronograma</span><span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">${brDate(ini)} → ${brDate(fim)}</span></div>
     <div class="crono"><div class="crono-track">${hoje!=null?`<span class="crono-hoje" style="left:${hoje}%" title="hoje"></span>`:""}${marks}</div>
     <div class="crono-legend"><span><i class="cron-mk cron-entregue"></i> entregue</span><span><i class="cron-mk cron-pend"></i> pendente</span><span><i class="cron-mk cron-atrasada"></i> atrasada</span><span><i class="crono-hoje-i"></i> hoje</span></div></div></div>`;
@@ -1296,7 +1298,10 @@ function stageRow(c,e,i){
     respHtml=resps.length?`<span class="resp-wrap">${resps.map(r=>`<span class="resp-chip">👤 ${esc(r)}</span>`).join("")}</span>`:`<span class="resp-chip vazio">sem responsável</span>`;
   }
   let chip="";
-  if(e.prazo){ const dd=diasAte(e.prazo); const cls=done?"praz-done":(dd<0?"praz-late":(dd<=5?"praz-soon":"praz-ok")); const txt=done?brDate(e.prazo):(dd<0?`atrasada ${-dd}d`:(dd===0?"vence hoje":`faltam ${dd}d`)); chip=`<span class="praz ${cls}" title="Prazo: ${brDate(e.prazo)}">📅 ${txt}</span>`; }
+  if(e.prazo){ const dd=diasAte(e.prazo); const congelado=["pausado","negociacao","encerrado"].includes(statusEfetivo(c));
+    const cls=done?"praz-done":(congelado?"praz-ok":(dd<0?"praz-late":(dd<=5?"praz-soon":"praz-ok")));
+    const txt=(done||congelado)?brDate(e.prazo):(dd<0?`atrasada ${-dd}d`:(dd===0?"vence hoje":`faltam ${dd}d`));
+    chip=`<span class="praz ${cls}" title="Prazo: ${brDate(e.prazo)}">📅 ${txt}</span>`; }
   const prazoHtml = ROLE==="gestao"
     ? `<span class="prazo-edit">${chip}<input type="date" class="st-prazo" data-prazo="${c.id}:${i}" value="${e.prazo||""}" title="Definir prazo desta demanda">${e.prazo?`<button class="praz-x" data-prazoclr="${c.id}:${i}" title="Limpar prazo">×</button>`:""}</span>`
     : (chip||`<span class="praz praz-ok" style="opacity:.6">sem prazo</span>`);
