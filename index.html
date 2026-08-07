@@ -970,7 +970,7 @@ function renderFluxo(){
     const d=new Date(base.getFullYear(),base.getMonth()+k,1);
     const ym=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
     let receita=0;
-    DB.forEach(c=>{ if(statusEfetivo(c)==="negociacao")return; getFin(c).parcelas.forEach(p=>{ if(p.venc&&p.venc.slice(0,7)===ym)receita+=(+p.valor||0); }); });
+    DB.forEach(c=>{ const s=statusEfetivo(c); if(s==="negociacao"||s==="pausado")return; getFin(c).parcelas.forEach(p=>{ if(p.venc&&p.venc.slice(0,7)===ym)receita+=(+p.valor||0); }); });
     const saldo=receita-desp; acum+=saldo;
     rows.push({label:d.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),receita,saldo,acum});
   }
@@ -1146,7 +1146,7 @@ function wireDespPanel(){
 }
 
 function renderKpis(){
-  const box=$("#kpis");const ativos=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao";});
+  const box=$("#kpis");const ativos=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao"&&s!=="pausado";});
   const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
   const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
   const kpi=(lab,val,sub,cls="",small=false,filter=null)=>`<div class="kpi ${cls}${filter?" kpi-click":""}${filter&&FILTER===filter?" active":""}" ${filter?`data-kpifilter="${filter}"`:""}><div class="lab">${lab}</div><div class="val ${small?'small':''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:""}</div>`;
@@ -1156,7 +1156,7 @@ function renderKpis(){
   h+=kpi("Em negociação",emNeg,"no funil de fechamento","",false,"negociacao");
   h+=kpi("Etapas concluídas",`${etDone}<span style="font-size:14px;color:var(--ink-soft)">/${etTot}</span>`,"entregas marcadas");
   if(ROLE==="gestao"){
-    const totC=DB.reduce((s,c)=>s+getFin(c).valorTotal,0);
+    const totC=DB.filter(c=>statusEfetivo(c)!=="pausado").reduce((s,c)=>s+getFin(c).valorTotal,0);
     const totMes=ativos.reduce((s,c)=>s+getFin(c).valorMensal,0);
     const totR=DB.reduce((s,c)=>s+recebido(c),0);
     const totAR=DB.reduce((s,c)=>s+aReceber(c),0);
