@@ -487,8 +487,8 @@ body.team .hide-team{display:none !important}
     <div class="toolbar">
       <div class="search"><span class="mag">🔍</span><input type="text" id="q" placeholder="Buscar contrato ou cliente..."></div>
       <div class="seg" id="filterSeg">
-        <button data-f="todos" class="active">Todos</button>
-        <button data-f="ativo">Ativos</button>
+        <button data-f="todos">Todos</button>
+        <button data-f="ativo" class="active">Ativos</button>
         <button data-f="negociacao">Em negociação</button>
         <button data-f="atrasado">Atenção</button>
         <button data-f="encerrado">Encerrados</button>
@@ -544,7 +544,7 @@ let EU="";            // "quem sou eu" (persistido) para as notificações
 try{ EU=localStorage.getItem("fortuna_eu")||""; }catch(e){}
 let ROLE=null;        // 'gestao' | 'team'
 let SESSION=false;    // logado na nuvem (gestão)
-let FILTER="todos", QUERY="";
+let FILTER="ativo", QUERY="";
 let VIEW="contratos"; // aba atual: contratos | despesas
 let sb=null;          // supabase client
 let lastLocalWrite=0; // guarda p/ evitar que o realtime da própria escrita atropele a UI
@@ -800,7 +800,7 @@ function etapaAtrasada(e){ return e && e.prazo && !isDone(e.status) && e.prazo <
 function buildAlertas(){
   const list=[];
   DB.forEach(c=>{
-    if(statusEfetivo(c)==="encerrado")return;
+    const _s=statusEfetivo(c); if(_s==="encerrado"||_s==="pausado"||_s==="negociacao")return;
     if(c.dataFim){ const dd=diasAte(c.dataFim);
       if(dd!=null && dd<0) list.push({sev:"crit",tipo:"Contrato vencido",cid:c.id,txt:`${c.cliente} · venceu ${brDate(c.dataFim)} (${-dd}d atrás)`});
       else if(dd!=null && dd<=15) list.push({sev:"warn",tipo:"Contrato vencendo",cid:c.id,txt:`${c.cliente} · vence ${brDate(c.dataFim)} (faltam ${dd}d)`}); }
@@ -863,6 +863,8 @@ function enterUI(role){
   document.body.classList.toggle("team",role==="team");
   $("#rolePill").textContent = role==="gestao"?"Gestão":"Equipe";
   const pc=$("#pwChangeBtn"); if(pc)pc.classList.toggle("hidden", !(CLOUD&&SESSION));
+  FILTER="ativo"; QUERY="";
+  const seg=$("#filterSeg"); if(seg)seg.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.f==="ativo"));
   switchView("contratos");
   render();
   const w=$(".wrap"); if(w){ w.classList.remove("reveal"); void w.offsetWidth; w.classList.add("reveal"); }
@@ -1190,7 +1192,7 @@ function switchView(v){
 function renderList(){
   const list=$("#list");let rows=DB.slice().sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
   if(QUERY){const q=QUERY.toLowerCase();rows=rows.filter(c=>(c.cliente+" "+(c.razao||"")+" "+(c.escopo||"")).toLowerCase().includes(q));}
-  if(FILTER!=="todos")rows=rows.filter(c=>{const s=statusEfetivo(c);if(FILTER==="ativo")return s!=="encerrado"&&s!=="negociacao";if(FILTER==="negociacao")return s==="negociacao";if(FILTER==="encerrado")return s==="encerrado";if(FILTER==="atrasado")return s==="atrasado"||s==="pausado";return true;});
+  if(FILTER!=="todos")rows=rows.filter(c=>{const s=statusEfetivo(c);if(FILTER==="ativo")return s!=="encerrado"&&s!=="negociacao"&&s!=="pausado";if(FILTER==="negociacao")return s==="negociacao";if(FILTER==="encerrado")return s==="encerrado";if(FILTER==="atrasado")return s==="atrasado"||s==="pausado";return true;});
   list.innerHTML="";
   if(!rows.length){list.innerHTML=`<div class="empty">Nenhum contrato encontrado.</div>`;return;}
   const grid=document.createElement("div"); grid.className="cgrid";
