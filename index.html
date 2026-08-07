@@ -159,6 +159,42 @@ body.view-agenda #agendaWrap{display:block}
 .fx-lbl{font-size:10.5px;color:var(--ink-soft);font-weight:700;white-space:nowrap;text-transform:capitalize}
 .fx-legend{display:flex;gap:16px;font-size:12px;color:var(--ink-soft);margin-top:14px;flex-wrap:wrap;align-items:center}
 .fx-k{display:inline-block;width:11px;height:11px;border-radius:4px;vertical-align:middle;margin-right:6px}
+/* --- financeiro gerencial --- */
+.fxbar{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;padding:2px 0 16px;border-bottom:1px solid var(--line);margin-bottom:16px}
+.fxbar-grp{display:flex;flex-direction:column;gap:5px}
+.fxbar-lab{font-size:11px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em}
+.fxbar-suf{align-self:center;color:var(--ink-soft);font-size:12px;margin-left:-6px}
+.fxseg{display:inline-flex;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:3px;gap:2px}
+.fxseg button{border:0;background:transparent;color:var(--ink-soft);font-family:inherit;font-weight:650;font-size:12.5px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.14s}
+.fxseg button:hover{color:var(--violet)}
+.fxseg button.active{background:var(--violet);color:#fff;box-shadow:0 6px 14px -7px var(--violet)}
+.fxinput{background:var(--panel-2);border:1px solid var(--line-strong);border-radius:9px;padding:7px 10px;font-size:13.5px;color:var(--ink);font-family:inherit;width:130px}
+.fxinput:focus{outline:0;border-color:var(--violet)}
+.fxkpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:6px}
+.fxkpi{background:var(--panel-2);border:1px solid var(--line);border-radius:13px;padding:13px 14px}
+.fxkpi.pos{border-color:color-mix(in srgb,var(--ok) 35%,var(--line))}
+.fxkpi.neg{border-color:color-mix(in srgb,var(--crit) 35%,var(--line))}
+.fxk-lab{font-size:11.5px;color:var(--ink-soft);font-weight:650;margin-bottom:5px}
+.fxk-val{font-size:19px;font-weight:800;letter-spacing:-.01em}
+.fxk-sub{font-size:11px;color:var(--ink-soft);margin-top:3px}
+.fxsec{margin-top:22px}
+.fxsec-h{font-size:14px;font-weight:750;margin-bottom:10px;font-family:"Montserrat",sans-serif}
+.fxsec-h .muted{font-weight:500;font-size:12px;color:var(--ink-soft)}
+.muted{color:var(--ink-soft)}
+.muted-note{font-size:12px;color:var(--ink-soft);background:var(--panel-2);border:1px dashed var(--line-strong);border-radius:9px;padding:8px 11px}
+.fxsvg{display:block;background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:8px 4px}
+.catbars{display:flex;flex-direction:column;gap:9px}
+.catrow{display:grid;grid-template-columns:130px 1fr auto;align-items:center;gap:12px}
+.catlab{font-size:12.5px;font-weight:650;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cattrack{height:14px;background:var(--panel-2);border-radius:7px;overflow:hidden}
+.cattrack i{display:block;height:100%;border-radius:7px;transition:width .5s cubic-bezier(.2,.75,.2,1)}
+.catval{font-size:12px;color:var(--ink-soft);white-space:nowrap}
+.catchips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.catchip{font-size:12px;padding:5px 11px;border-radius:999px;background:var(--violet-tint);color:var(--ink);border:1px solid color-mix(in srgb,var(--violet) 20%,transparent)}
+.catchip b{color:var(--violet);font-weight:750;margin-right:3px}
+.tbl tfoot td{border-top:2px solid var(--line-strong);font-weight:750;background:var(--panel-2)}
+.desp-tbl input[type=month]{font-size:12.5px}
+@media(max-width:680px){.catrow{grid-template-columns:92px 1fr auto}.fxbar{gap:12px}}
 @keyframes fxGrow{from{transform:scaleY(0);opacity:.4}to{transform:scaleY(1);opacity:1}}
 .tbl tbody tr{transition:background .15s}
 .tbl tbody tr:hover{background:var(--panel-2)}
@@ -484,7 +520,7 @@ body.team .hide-team{display:none !important}
     <div class="viewnav" id="viewnav">
       <button data-view="contratos" class="active">📋 Contratos</button>
       <button data-view="agenda">📅 Agenda</button>
-      <button data-view="despesas" class="hide-team">💸 Despesas fixas</button>
+      <button data-view="despesas" class="hide-team">💸 Custos & Despesas</button>
       <button data-view="fluxo" class="hide-team">📈 Fluxo de caixa</button>
       <button id="btnResumo" class="nav-acao hide-team">🗒️ Resumo da semana</button>
     </div>
@@ -603,8 +639,8 @@ function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,r
   data_inicio:c.dataInicio||null,data_fim:c.dataFim||null,data_assinatura:c.dataAssinatura||null,prazo_tipo:c.prazoTipo,prazo_valor:c.prazoValor?+c.prazoValor:null,
   escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],telefone:c.telefone||"",auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
-function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0};}
-function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0};}
+function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0,inicio:r.inicio||"",fim:r.fim||""};}
+function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0,inicio:d.inicio||null,fim:d.fim||null};}
 function rowToN(r){return {id:r.id,membro:r.membro,tipo:r.tipo||"atribuicao",contratoId:r.contrato_id,contrato:r.contrato,etapa:r.etapa,criadoEm:r.criado_em,lida:!!r.lida};}
 function rowToM(r){return {id:r.id,nome:r.nome,apelido:r.apelido||"",nomeCompleto:r.nome_completo||"",funcao:r.funcao||"",foto:r.foto||"",whatsapp:r.whatsapp||"",email:r.email||"",loginEmail:r.login_email||"",aprovado:r.aprovado!==false,ordem:r.ordem||0};}
 function mToRow(m){return {id:m.id,nome:m.nome||"",apelido:m.apelido||"",nome_completo:m.nomeCompleto||"",funcao:m.funcao||"",foto:m.foto||"",whatsapp:m.whatsapp||"",email:m.email||"",aprovado:m.aprovado!==false,ordem:m.ordem||0};}
@@ -995,7 +1031,167 @@ function renderAtrib(){
   const sel=wrap.querySelector("#atribSel"); if(sel){sel.onclick=e=>e.stopPropagation();sel.onchange=()=>{ATRIB_MEMBRO=sel.value;const wasOpen=wrap.querySelector(".membros-card").classList.contains("open");renderAtrib();if(wasOpen)wrap.querySelector(".membros-card").classList.add("open");};}
 }
 
+/* ============================================================
+   MOTOR FINANCEIRO GERENCIAL — despesas com vigência, cenários, projeção
+   ============================================================ */
+const FX_STORE_KEY="fortuna_fx";
+let FX={scenario:"realista",horizon:12};
+try{ const s=JSON.parse(localStorage.getItem(FX_STORE_KEY)||"{}"); FX={...FX,...s}; }catch(e){}
+function fxSave(){ try{localStorage.setItem(FX_STORE_KEY,JSON.stringify(FX));}catch(e){} }
+function caixaInicial(){ return +((APPCFG.caixa_inicial||"").toString().replace(/\./g,"").replace(",","."))|| +((APPCFG.caixa_inicial||0)) ||0; }
+function negProb(){ const v=+(APPCFG.neg_prob); return (isFinite(v)&&v>=0&&v<=100)?v:50; }
+function ymOf(iso){ return iso?String(iso).slice(0,7):""; }
+function ymOfDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function fxAddMonths(base,k){ return new Date(base.getFullYear(),base.getMonth()+k,1); }
+function contractWindow(c){
+  let startYM=ymOf(c.dataInicio);
+  if(!startYM){ const vs=getFin(c).parcelas.map(p=>p.venc).filter(Boolean).sort(); startYM=vs.length?ymOf(vs[0]):ymOfDate(new Date()); }
+  let endYM=ymOf(c.dataFim);
+  if(!endYM&&c.dataInicio&&c.prazoValor){ const di=parseISO(c.dataInicio);
+    if(di&&!isNaN(di)){ const meses=c.prazoTipo==="dias"?Math.ceil((+c.prazoValor)/30):(+c.prazoValor); const e=new Date(di.getFullYear(),di.getMonth()+Math.max(0,meses-1),1); endYM=ymOfDate(e); } }
+  return {startYM,endYM};
+}
+function ymInWindow(ym,s,e){ if(s&&ym<s)return false; if(e&&ym>e)return false; return true; }
+function contractRevenueMonth(c,ym,{allowRecorr=true}={}){
+  const fin=getFin(c);
+  const par=fin.parcelas.filter(p=>p.venc&&ymOf(p.venc)===ym);
+  if(par.length) return par.reduce((s,p)=>s+(+p.valor||0),0);      // parcela lançada manda
+  if(allowRecorr&&(+fin.valorMensal>0)){ const w=contractWindow(c); if(ymInWindow(ym,w.startYM,w.endYM)) return +fin.valorMensal; }
+  return 0;
+}
+function contractsForScenario(){
+  const firmes=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao";});
+  const neg=DB.filter(c=>statusEfetivo(c)==="negociacao");
+  return {firmes,neg};
+}
+function receitaMes(ym,scenario){
+  const {firmes,neg}=contractsForScenario(); let r=0;
+  const rec=scenario!=="conservador";
+  firmes.forEach(c=>{ r+=contractRevenueMonth(c,ym,{allowRecorr:rec}); });
+  if(scenario==="otimista"){ const p=negProb()/100; neg.forEach(c=>{ r+=contractRevenueMonth(c,ym,{allowRecorr:true})*p; }); }
+  return r;
+}
+function despesasMes(ym,scenario){
+  let total=0; const byCat={};
+  const add=(cat,v)=>{ if(!v)return; total+=v; cat=cat||"Geral"; byCat[cat]=(byCat[cat]||0)+v; };
+  DESP.forEach(d=>{ if(d.valor==null)return; const rec=(d.recorrencia||"mensal");
+    if(rec==="unica"){ if(d.inicio&&d.inicio===ym) add(d.categoria,+d.valor); }
+    else { const okS=!d.inicio||ym>=d.inicio, okE=!d.fim||ym<=d.fim; if(okS&&okE) add(d.categoria,+d.valor); } });
+  const {firmes,neg}=contractsForScenario();
+  const pool=scenario==="otimista"?firmes.concat(neg):firmes;
+  pool.forEach(c=>{ getFin(c).despesas.forEach(x=>{ if(x.data&&ymOf(x.data)===ym) add("Custos de projeto",+x.valor||0); }); });
+  return {total,byCat};
+}
+function buildProjection(scenario,horizon){
+  const base=new Date(); const b=new Date(base.getFullYear(),base.getMonth(),1);
+  let acum=caixaInicial(); const rows=[];
+  for(let k=0;k<horizon;k++){ const d=fxAddMonths(b,k); const ym=ymOfDate(d);
+    const receita=receitaMes(ym,scenario); const dm=despesasMes(ym,scenario);
+    const saldo=receita-dm.total; acum+=saldo;
+    rows.push({ym,label:d.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),receita,despesa:dm.total,byCat:dm.byCat,saldo,acum}); }
+  return rows;
+}
+function projKpis(rows){
+  const h=rows.length||1;
+  const totRec=rows.reduce((s,r)=>s+r.receita,0), totDesp=rows.reduce((s,r)=>s+r.despesa,0);
+  const resultado=totRec-totDesp, avgRec=totRec/h, avgDesp=totDesp/h;
+  const margem=totRec>0?resultado/totRec*100:0;
+  const minRow=rows.reduce((m,r)=>r.acum<m.acum?r:m,rows[0]||{acum:0,label:"—"});
+  const melhor=rows.reduce((m,r)=>r.saldo>m.saldo?r:m,rows[0]||{saldo:0,label:"—"});
+  const pior=rows.reduce((m,r)=>r.saldo<m.saldo?r:m,rows[0]||{saldo:0,label:"—"});
+  let runway=null; for(const r of rows){ if(r.acum<0){ runway=r; break; } }
+  return {totRec,totDesp,resultado,avgRec,avgDesp,margem,minRow,melhor,pior,runway,caixaIni:caixaInicial()};
+}
+/* --- gráficos SVG --- */
+function svgBars(rows){
+  const W=Math.max(560,rows.length*54),H=240,pl=8,pr=8,pt=20,pb=26;
+  const maxV=Math.max(1,...rows.map(r=>Math.max(r.receita,r.despesa)));
+  const iw=(W-pl-pr)/rows.length, bw=Math.min(15,iw/2-3);
+  const y=v=>(H-pb)-(v/maxV)*(H-pt-pb);
+  let g="";
+  [0,0.5,1].forEach(t=>{ const yy=(H-pb)-t*(H-pt-pb); g+=`<line x1="${pl}" y1="${yy.toFixed(1)}" x2="${W-pr}" y2="${yy.toFixed(1)}" stroke="var(--line)" ${t?'stroke-dasharray="3 4"':""}/>`; });
+  rows.forEach((r,i)=>{ const cx=pl+iw*i+iw/2, rx=cx-bw-2, dx=cx+2;
+    g+=`<rect x="${rx.toFixed(1)}" y="${y(r.receita).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H-pb-y(r.receita)).toFixed(1)}" rx="3" fill="var(--violet)"><title>${r.label} · receita ${fmt(r.receita)}</title></rect>`;
+    g+=`<rect x="${dx.toFixed(1)}" y="${y(r.despesa).toFixed(1)}" width="${bw.toFixed(1)}" height="${(H-pb-y(r.despesa)).toFixed(1)}" rx="3" fill="var(--crit)"><title>${r.label} · despesa ${fmt(r.despesa)}</title></rect>`;
+    g+=`<text x="${cx.toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="10" fill="var(--ink-soft)">${r.label}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMinYMid meet" class="fxsvg">${g}</svg>`;
+}
+function svgSaldo(rows,caixaIni){
+  const W=Math.max(560,rows.length*54),H=220,pl=8,pr=8,pt=16,pb=26;
+  const pts=[{acum:caixaIni,label:"hoje"}].concat(rows.map(r=>({acum:r.acum,label:r.label})));
+  const n=pts.length, vals=pts.map(p=>p.acum).concat([0]);
+  let mn=Math.min(...vals), mx=Math.max(...vals); if(mn===mx)mx=mn+1;
+  const px=i=>pl+(i/(n-1))*(W-pl-pr), py=v=>(H-pb)-((v-mn)/(mx-mn))*(H-pt-pb), zy=py(0);
+  const line=pts.map((p,i)=>`${i?"L":"M"}${px(i).toFixed(1)} ${py(p.acum).toFixed(1)}`).join(" ");
+  const area=`M${px(0).toFixed(1)} ${zy.toFixed(1)} `+pts.map((p,i)=>`L${px(i).toFixed(1)} ${py(p.acum).toFixed(1)}`).join(" ")+` L${px(n-1).toFixed(1)} ${zy.toFixed(1)} Z`;
+  let g=`<defs><linearGradient id="fxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--violet)" stop-opacity="0.28"/><stop offset="1" stop-color="var(--violet)" stop-opacity="0"/></linearGradient></defs>`;
+  g+=`<line x1="${pl}" y1="${zy.toFixed(1)}" x2="${W-pr}" y2="${zy.toFixed(1)}" stroke="var(--line-strong)"/>`;
+  g+=`<path d="${area}" fill="url(#fxg)"/><path d="${line}" fill="none" stroke="var(--violet)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  pts.forEach((p,i)=>{ g+=`<circle cx="${px(i).toFixed(1)}" cy="${py(p.acum).toFixed(1)}" r="${i===0?3.2:2.6}" fill="${p.acum<0?"var(--crit)":"var(--violet)"}"><title>${p.label} · ${fmt(p.acum)}</title></circle>`; });
+  const step=Math.max(1,Math.ceil((n-1)/6));
+  pts.forEach((p,i)=>{ if(i%step===0||i===n-1) g+=`<text x="${px(i).toFixed(1)}" y="${H-9}" text-anchor="middle" font-size="9.5" fill="var(--ink-soft)">${p.label}</text>`; });
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMinYMid meet" class="fxsvg">${g}</svg>`;
+}
+function catAgg(rows){ const m={}; rows.forEach(r=>Object.entries(r.byCat||{}).forEach(([k,v])=>m[k]=(m[k]||0)+v)); return Object.entries(m).sort((a,b)=>b[1]-a[1]); }
+function catBars(rows){
+  const agg=catAgg(rows), tot=agg.reduce((s,x)=>s+x[1],0)||1;
+  if(!agg.length) return '<div class="muted-note">Sem despesas no período.</div>';
+  const pal=["var(--violet)","var(--crit)","var(--warn)","var(--info)","var(--ok)","var(--navy)"];
+  return `<div class="catbars">`+agg.map(([k,v],i)=>{ const p=v/tot*100; return `<div class="catrow"><div class="catlab">${esc(k)}</div><div class="cattrack"><i style="width:${p.toFixed(1)}%;background:${pal[i%pal.length]}"></i></div><div class="catval mono">${fmt(v)} · ${p.toFixed(0)}%</div></div>`; }).join("")+`</div>`;
+}
+function fxKpi(lab,val,sub,cls=""){ return `<div class="fxkpi ${cls}"><div class="fxk-lab">${lab}</div><div class="fxk-val mono">${val}</div><div class="fxk-sub">${sub}</div></div>`; }
 function renderFluxo(){
+  const wrap=$("#fluxoWrap"); if(!wrap)return;
+  if(ROLE!=="gestao"){wrap.innerHTML="";return;}
+  const sc=FX.scenario, hz=FX.horizon;
+  const rows=buildProjection(sc,hz), k=projKpis(rows);
+  const scLabel={conservador:"Conservador",realista:"Realista",otimista:"Otimista"};
+  const scDesc={conservador:"Só parcelas já lançadas (sem projeção de recorrência, sem negociação). O piso.",
+    realista:"Contratos ativos + recorrência mensal projetada até o fim de cada contrato.",
+    otimista:`Realista + contratos em negociação ponderados por ${negProb()}% de probabilidade.`};
+  const seg=(id,cur,opts)=>`<div class="fxseg" id="${id}">`+opts.map(o=>`<button data-v="${o.v}" class="${String(cur)==String(o.v)?"active":""}">${o.l}</button>`).join("")+`</div>`;
+  const runwayTxt=k.runway?`<span class="val-neg">${k.runway.label}</span>`:`<span class="val-pos">saudável</span>`;
+  const runwaySub=k.runway?"quando o caixa fica negativo":`caixa positivo nos ${hz} meses`;
+  wrap.innerHTML=`<div class="card fxcard" style="margin-bottom:22px">
+    <div class="card-head" style="cursor:default">
+      <div class="c-title"><h3>Fluxo de caixa · gerencial</h3><div class="meta">Projeção de ${hz} meses · cenário <b>${scLabel[sc]}</b> — ${scDesc[sc]}</div></div>
+      <div class="money-head"><div class="big mono ${k.resultado<0?"val-neg":"val-pos"}">${fmt(k.resultado)}</div><div class="lil">resultado projetado</div></div>
+    </div>
+    <div class="card-body" style="display:block">
+      <div class="fxbar">
+        <div class="fxbar-grp"><span class="fxbar-lab">Cenário</span>${seg("fxScenario",sc,[{v:"conservador",l:"Conservador"},{v:"realista",l:"Realista"},{v:"otimista",l:"Otimista"}])}</div>
+        <div class="fxbar-grp"><span class="fxbar-lab">Horizonte</span>${seg("fxHorizon",hz,[{v:6,l:"6m"},{v:12,l:"12m"},{v:24,l:"24m"}])}</div>
+        <div class="fxbar-grp"><span class="fxbar-lab">Caixa inicial</span><input id="fxCaixa" class="fxinput mono" type="number" step="0.01" value="${caixaInicial()||""}" placeholder="0,00"></div>
+        ${sc==="otimista"?`<div class="fxbar-grp"><span class="fxbar-lab">Prob. negociação</span><input id="fxProb" class="fxinput mono" type="number" min="0" max="100" step="5" value="${negProb()}"><span class="fxbar-suf">%</span></div>`:""}
+      </div>
+      <div class="fxkpis">
+        ${fxKpi("Receita média/mês",fmt(k.avgRec),"entradas previstas")}
+        ${fxKpi("Despesa média/mês",fmt(k.avgDesp),"saídas previstas")}
+        ${fxKpi("Margem",k.margem.toFixed(0)+"%",k.resultado<0?"no vermelho":"sobra sobre a receita",k.margem<0?"neg":"pos")}
+        ${fxKpi("Ponto de equilíbrio",fmt(k.avgDesp),"receita p/ empatar/mês")}
+        ${fxKpi("Runway",runwayTxt,runwaySub)}
+        ${fxKpi("Menor saldo no período",fmt(k.minRow.acum),"em "+(k.minRow.label||"—"),k.minRow.acum<0?"neg":"")}
+      </div>
+      <div class="fxsec"><div class="fxsec-h">Saldo em caixa projetado <span class="muted">· caixa inicial ${fmt(k.caixaIni)} + resultado acumulado</span></div>${svgSaldo(rows,k.caixaIni)}</div>
+      <div class="fxsec"><div class="fxsec-h">Receita × Despesa por mês</div>${svgBars(rows)}
+        <div class="fx-legend"><span><i class="fx-k" style="background:var(--violet)"></i> receita</span><span><i class="fx-k" style="background:var(--crit)"></i> despesa</span></div></div>
+      <div class="fxsec"><div class="fxsec-h">Para onde vai o dinheiro <span class="muted">· despesas por categoria no período</span></div>${catBars(rows)}</div>
+      <div class="fxsec"><div class="fxsec-h">Mês a mês</div>
+        <div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Mês</th><th class="r">Receita</th><th class="r">Despesa</th><th class="r">Saldo</th><th class="r">Caixa acumulado</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr><td>${r.label}</td><td class="r mono">${fmt(r.receita)}</td><td class="r mono">${fmt(r.despesa)}</td><td class="r mono ${r.saldo<0?"val-neg":"val-pos"}">${fmt(r.saldo)}</td><td class="r mono ${r.acum<0?"val-neg":"val-pos"}">${fmt(r.acum)}</td></tr>`).join("")}</tbody>
+        <tfoot><tr><td><b>Total</b></td><td class="r mono">${fmt(k.totRec)}</td><td class="r mono">${fmt(k.totDesp)}</td><td class="r mono ${k.resultado<0?"val-neg":"val-pos"}">${fmt(k.resultado)}</td><td class="r mono ${(rows.length?rows[rows.length-1].acum:k.caixaIni)<0?"val-neg":"val-pos"}">${fmt(rows.length?rows[rows.length-1].acum:k.caixaIni)}</td></tr></tfoot>
+        </table></div></div>
+    </div></div>`;
+  wireFluxo();
+}
+function wireFluxo(){
+  const w=$("#fluxoWrap"); if(!w)return;
+  w.querySelectorAll("#fxScenario button").forEach(b=>b.onclick=()=>{ FX.scenario=b.dataset.v; fxSave(); renderFluxo(); });
+  w.querySelectorAll("#fxHorizon button").forEach(b=>b.onclick=()=>{ FX.horizon=+b.dataset.v; fxSave(); renderFluxo(); });
+  const cx=w.querySelector("#fxCaixa"); if(cx)cx.onchange=async()=>{ try{ await Store.saveCfg("caixa_inicial",(cx.value||"").trim()); renderFluxo(); renderKpis(); }catch(e){ toast("Erro ao salvar caixa",true);} };
+  const pr=w.querySelector("#fxProb"); if(pr)pr.onchange=async()=>{ const v=Math.max(0,Math.min(100,+pr.value||0)); try{ await Store.saveCfg("neg_prob",String(v)); renderFluxo(); }catch(e){ toast("Erro",true);} };
+}
+function _renderFluxo_legacy(){
   const wrap=$("#fluxoWrap"); if(!wrap)return;
   if(ROLE!=="gestao"){wrap.innerHTML="";return;}
   const MESES=12, hoje=new Date(), base=new Date(hoje.getFullYear(),hoje.getMonth(),1);
@@ -1165,26 +1361,37 @@ function despesaFixaMes(){return DESP.filter(d=>(d.recorrencia||"mensal")==="men
 function renderDesp(){
   const wrap=$("#despWrap"); if(!wrap)return;
   if(ROLE!=="gestao"){ wrap.innerHTML=""; return; }
-  const rows=DESP.slice().sort((a,b)=>(a.ordem||0)-(b.ordem||0));
+  const rows=DESP.slice().sort((a,b)=>((a.categoria||"~").localeCompare(b.categoria||"~"))||(a.ordem||0)-(b.ordem||0));
   const naDefinir=DESP.filter(d=>d.valor==null).length;
+  const totMes=despesaFixaMes();
+  const cats={}; DESP.forEach(d=>{ if((d.recorrencia||"mensal")==="mensal"&&d.valor!=null){ const k=d.categoria||"Geral"; cats[k]=(cats[k]||0)+ +d.valor; } });
+  const catList=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  const chips=catList.map(([k,v])=>`<span class="catchip"><b>${esc(k)}</b> ${fmt(v)}</span>`).join("");
+  const catOpts=[...new Set(DESP.map(d=>d.categoria).filter(Boolean))].map(c=>`<option value="${esc(c)}">`).join("");
   wrap.innerHTML=`<div class="card desp-card" style="margin-bottom:22px">
     <div class="card-head" style="cursor:default">
-      <div class="c-title"><h3>Despesas fixas · mensais</h3><div class="meta">Edite qualquer linha — nome, categoria, valor e recorrência. Valor vazio = “a definir”.${naDefinir?` · ${naDefinir} a definir`:""}</div></div>
-      <div class="money-head"><div class="big mono" id="despTotal">${fmt(despesaFixaMes())}</div><div class="lil">total mensal</div></div>
+      <div class="c-title"><h3>Custos fixos & despesas</h3><div class="meta">Recorrência mensal ou única, com vigência (início/fim). Valor vazio = “a definir”.${naDefinir?` · ${naDefinir} a definir`:""}</div></div>
+      <div class="money-head"><div class="big mono" id="despTotal">${fmt(totMes)}</div><div class="lil">fixo mensal</div></div>
     </div>
     <div class="card-body" style="display:block">
-      <div style="overflow-x:auto"><table class="tbl desp-tbl"><thead><tr><th>Descrição</th><th>Categoria</th><th class="r">Valor / mês</th><th>Recorrência</th><th class="r"></th></tr></thead>
-      <tbody>${rows.map(despRowEdit).join("")||'<tr><td colspan="5" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table></div>
+      ${chips?`<div class="catchips">${chips}</div>`:""}
+      <datalist id="catlist">${catOpts}</datalist>
+      <div style="overflow-x:auto"><table class="tbl desp-tbl"><thead><tr><th>Descrição</th><th>Categoria</th><th class="r">Valor</th><th>Recorrência</th><th>Início</th><th>Fim</th><th class="r"></th></tr></thead>
+      <tbody>${rows.map(despRowEdit).join("")||'<tr><td colspan="7" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table></div>
       <button class="add-mini" id="addDesp" style="max-width:220px">+ Adicionar despesa</button>
+      <div class="muted-note" style="margin-top:10px">💡 <b>Início/Fim</b> definem a vigência na projeção do fluxo (ex.: alguém que entra em março ou sai em agosto). Para <b>única</b>, preencha só o Início = mês do gasto.</div>
     </div></div>`;
   wireDespPanel();
 }
 function despRowEdit(d){
+  const unica=d.recorrencia==="unica";
   return `<tr data-did="${d.id}">
     <td><input class="cell" data-df="nome" value="${esc(d.nome||"")}" placeholder="Descrição"></td>
-    <td><input class="cell" data-df="categoria" value="${esc(d.categoria||"")}" placeholder="—"></td>
+    <td><input class="cell" data-df="categoria" value="${esc(d.categoria||"")}" placeholder="Geral" list="catlist"></td>
     <td class="r"><input class="cell rr mono" data-df="valor" type="number" step="0.01" value="${d.valor==null?"":d.valor}" placeholder="a definir"></td>
-    <td><select class="cell" data-df="recorrencia"><option value="mensal" ${d.recorrencia!=="unica"?"selected":""}>mensal</option><option value="unica" ${d.recorrencia==="unica"?"selected":""}>única</option></select></td>
+    <td><select class="cell" data-df="recorrencia"><option value="mensal" ${!unica?"selected":""}>mensal</option><option value="unica" ${unica?"selected":""}>única</option></select></td>
+    <td><input class="cell" data-df="inicio" type="month" value="${esc(d.inicio||"")}" title="${unica?"mês do gasto":"a partir de (opcional)"}"></td>
+    <td><input class="cell" data-df="fim" type="month" value="${esc(d.fim||"")}" ${unica?"disabled":""} title="até (opcional)"></td>
     <td class="r"><button class="link" style="color:var(--crit)" data-drem="${d.id}">remover</button></td>
   </tr>`;
 }
@@ -1196,12 +1403,12 @@ function wireDespPanel(){
     tr.querySelectorAll("[data-df]").forEach(inp=>{
       const commit=async()=>{ const d=DESP.find(x=>x.id===id); if(!d)return; const f=inp.dataset.df;
         d[f]= f==="valor" ? (inp.value===""?null:+inp.value) : inp.value;
-        try{ await Store.saveDesp(d); updateDespTotal(); renderKpis(); }catch(e){ toast("Erro ao salvar despesa",true); } };
+        try{ await Store.saveDesp(d); if(f==="recorrencia")renderDesp(); else updateDespTotal(); renderKpis(); renderFluxo(); }catch(e){ toast("Erro ao salvar despesa",true); } };
       inp.onchange=commit;
     });
   });
-  wrap.querySelectorAll("[data-drem]").forEach(b=>b.onclick=async()=>{ if(confirm("Remover esta despesa?")){ try{ await Store.removeDesp(b.dataset.drem); renderDesp(); renderKpis(); }catch(e){ toast("Erro ao remover",true);} } });
-  const add=wrap.querySelector("#addDesp"); if(add)add.onclick=async()=>{ const d={id:uid(),nome:"",valor:null,recorrencia:"mensal",categoria:"",ordem:(DESP.reduce((m,x)=>Math.max(m,x.ordem||0),0)+1)}; try{ await Store.saveDesp(d); renderDesp(); }catch(e){ toast("Erro ao adicionar",true);} };
+  wrap.querySelectorAll("[data-drem]").forEach(b=>b.onclick=async()=>{ if(confirm("Remover esta despesa?")){ try{ await Store.removeDesp(b.dataset.drem); renderDesp(); renderKpis(); renderFluxo(); }catch(e){ toast("Erro ao remover",true);} } });
+  const add=wrap.querySelector("#addDesp"); if(add)add.onclick=async()=>{ const d={id:uid(),nome:"",valor:null,recorrencia:"mensal",categoria:"",inicio:"",fim:"",ordem:(DESP.reduce((m,x)=>Math.max(m,x.ordem||0),0)+1)}; try{ await Store.saveDesp(d); renderDesp(); }catch(e){ toast("Erro ao adicionar",true);} };
 }
 
 function renderKpis(){
