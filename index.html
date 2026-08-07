@@ -1060,7 +1060,7 @@ function contractRevenueMonth(c,ym,{allowRecorr=true}={}){
   return 0;
 }
 function contractsForScenario(){
-  const firmes=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao";});
+  const firmes=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao"&&s!=="encerrado";});
   const neg=DB.filter(c=>statusEfetivo(c)==="negociacao");
   return {firmes,neg};
 }
@@ -1422,7 +1422,7 @@ function renderKpis(){
   h+=kpi("Em negociação",emNeg,"no funil de fechamento","",false,"negociacao");
   h+=kpi("Etapas concluídas",`${etDone}<span style="font-size:14px;color:var(--ink-soft)">/${etTot}</span>`,"entregas marcadas");
   if(ROLE==="gestao"){
-    const carteira=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao";});
+    const carteira=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao"&&s!=="encerrado";});
     const totC=carteira.reduce((s,c)=>s+getFin(c).valorTotal,0);
     const totMes=ativos.reduce((s,c)=>s+getFin(c).valorMensal,0);
     const totR=DB.reduce((s,c)=>s+recebido(c),0);
