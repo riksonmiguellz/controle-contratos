@@ -985,7 +985,7 @@ function renderAgenda(){
   wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
       <div class="c-title"><h3>Agenda da Fortuna</h3><div class="meta">Calendário compartilhado do time — também aparece na agenda pessoal de quem foi convidado no Google.</div></div></div>
     <div class="card-body" style="display:block">${editor}${inner}</div></div>`;
-  const save=wrap.querySelector("#agSave"); if(save)save.onclick=async()=>{ const v=wrap.querySelector("#agUrl").value.trim(); try{ await Store.saveCfg("agenda_url",v); renderAgenda(); toast("Agenda salva"); }catch(e){ toast("Erro ao salvar",true); } };
+  const save=wrap.querySelector("#agSave"); if(save)save.onclick=async()=>{ let v=wrap.querySelector("#agUrl").value.trim(); const m=v.match(/src=["']([^"']+)["']/); if(m)v=m[1]; try{ await Store.saveCfg("agenda_url",v); renderAgenda(); toast("Agenda salva"); }catch(e){ toast("Erro ao salvar",true); } };
 }
 function renderMembros(){
   const wrap=$("#membrosWrap"); if(!wrap)return;
