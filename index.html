@@ -430,16 +430,16 @@ body.team .hide-team{display:none !important}
     <div class="roles">
       <button class="role-btn" id="btnGestao">
         <span class="ic">🔐</span>
-        <span><span class="t">Acesso Gestão</span><br><span class="d">Miguel · Fabio · Claudio</span></span>
+        <span><span class="t">Entrar com meu acesso</span><br><span class="d">Cada pessoa com seu e-mail e senha</span></span>
       </button>
       <div class="pw-row" id="pwRow">
-        <input type="email" id="email" placeholder="E-mail da Gestão" autocomplete="username" class="hidden">
-        <input type="password" id="pw" placeholder="Senha" autocomplete="current-password">
+        <input type="email" id="email" placeholder="Seu e-mail" autocomplete="username" class="hidden">
+        <input type="password" id="pw" placeholder="Sua senha" autocomplete="current-password">
         <button class="btn" id="pwGo">Entrar</button>
       </div>
       <button class="role-btn" id="btnEquipe">
         <span class="ic">👥</span>
-        <span><span class="t">Acesso Equipe</span><br><span class="d">Escopo, prazos, progresso e etapas</span></span>
+        <span><span class="t">Ver como equipe (sem login)</span><br><span class="d">Escopo, prazos, progresso e etapas</span></span>
       </button>
     </div>
     <div class="err" id="gateErr"></div>
@@ -456,6 +456,7 @@ body.team .hide-team{display:none !important}
     <button class="btn ghost sm bell" id="bellBtn" title="Minhas notificações">🔔<span class="bell-badge hidden" id="bellCount">0</span></button>
     <button class="btn ghost sm hide-team" id="exportBtn">Backup</button>
     <button class="btn ghost sm hide-team" id="importBtn">Importar</button>
+    <button class="btn ghost sm hidden" id="pwChangeBtn">Trocar senha</button>
     <button class="btn ghost sm" id="printBtn">Imprimir</button>
     <button class="btn sm hide-team" id="addBtn">+ Novo contrato</button>
     <button class="btn ghost sm" id="logoutBtn">Sair</button>
@@ -734,12 +735,26 @@ const Store={
     for(const c of arr){ await sb.from("contracts").upsert(cToRow(c)); if(SESSION && c.fin) await sb.from("contract_finance").upsert(cToFinRow(c)); }
     await this.reload();
   },
-  async loginGestao(email,pass){
-    if(!CLOUD){ if(pass===LOCAL_PW){SESSION=true;return true;} throw new Error("Senha incorreta."); }
+  async loginGestao(email,pass){   // login por e-mail: resolve papel (gestao/equipe) e identidade
+    if(!CLOUD){ if(pass===LOCAL_PW){SESSION=true;return "gestao";} throw new Error("Senha incorreta."); }
     await ensureSB();
-    const {error}=await sb.auth.signInWithPassword({email:email||CONFIG.GESTAO_EMAIL,password:pass});
-    if(error)throw new Error("Login inválido: "+error.message);
-    SESSION=true; await this.reload(); return true;
+    const {error}=await sb.auth.signInWithPassword({email:(email||"").trim(),password:pass});
+    if(error)throw new Error("E-mail ou senha inválidos.");
+    SESSION=true; await this.reload();
+    return await this.resolvePapel();
+  },
+  async resolvePapel(){   // lê o papel do usuário logado e liga o sino ao membro dele
+    if(!CLOUD||!SESSION)return "gestao";
+    try{
+      const {data}=await sb.from("app_roles").select("role,membro_id").limit(1).maybeSingle();
+      if(data&&data.membro_id){ const m=MEMBROS.find(x=>x.id===data.membro_id); if(m){ EU=m.nome; try{localStorage.setItem("fortuna_eu",EU);}catch(e){} } }
+      return (data&&data.role==="gestao")?"gestao":"team";
+    }catch(e){ return "team"; }
+  },
+  async trocarSenha(nova){
+    if(!CLOUD)throw new Error("Só na nuvem.");
+    const {error}=await sb.auth.updateUser({password:nova});
+    if(error)throw new Error(error.message);
   },
   async logout(){ if(CLOUD&&sb&&SESSION){try{await sb.auth.signOut();}catch(e){}} SESSION=false; if(CLOUD)await this.reload(); }
 };
@@ -803,7 +818,6 @@ function renderGateTeam(){
 function refreshModeUI(){
   updateCloud();
   $("#email").classList.toggle("hidden",!CLOUD);
-  if(CLOUD&&CONFIG.GESTAO_EMAIL)$("#email").value=CONFIG.GESTAO_EMAIL;
 }
 $("#btnGestao").onclick=()=>{$("#pwRow").classList.add("show");(CLOUD&&!$("#email").value?$("#email"):$("#pw")).focus();};
 $("#pwGo").onclick=doLogin;
@@ -811,7 +825,7 @@ $("#pw").addEventListener("keydown",e=>{if(e.key==="Enter")doLogin();});
 $("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();});
 async function doLogin(){
   const btn=$("#pwGo");btn.disabled=true;$("#gateErr").textContent="";
-  try{ await Store.loginGestao($("#email").value.trim(),$("#pw").value); enterUI("gestao"); }
+  try{ const role=await Store.loginGestao($("#email").value.trim(),$("#pw").value); enterUI(role); }
   catch(e){ $("#gateErr").textContent=e.message||"Falha no login."; $("#pw").select(); }
   finally{ btn.disabled=false; }
 }
@@ -822,6 +836,7 @@ function enterUI(role){
   try{window.BGFX&&window.BGFX.stop();}catch(e){}
   document.body.classList.toggle("team",role==="team");
   $("#rolePill").textContent = role==="gestao"?"Gestão":"Equipe";
+  const pc=$("#pwChangeBtn"); if(pc)pc.classList.toggle("hidden", !(CLOUD&&SESSION));
   switchView("contratos");
   render();
   const w=$(".wrap"); if(w){ w.classList.remove("reveal"); void w.offsetWidth; w.classList.add("reveal"); }
@@ -1488,6 +1503,25 @@ $("#filterSeg").querySelectorAll("button").forEach(b=>b.onclick=()=>setFilter(b.
 $("#viewnav").querySelectorAll("button[data-view]").forEach(b=>b.onclick=()=>switchView(b.dataset.view));
 $("#btnResumo").onclick=()=>resumoModal();
 $("#bellBtn").onclick=()=>notifModal();
+$("#pwChangeBtn").onclick=()=>{
+  const bg=document.createElement("div"); bg.className="modal-bg";
+  bg.innerHTML=`<div class="modal" style="max-width:420px"><div class="modal-head"><h2>Trocar minha senha</h2><button class="close-x" data-x>×</button></div>
+    <div class="modal-body"><div class="field"><label>Nova senha (mín. 6 caracteres)</label><input type="password" id="np1" placeholder="nova senha"></div>
+    <div class="field"><label>Repita a nova senha</label><input type="password" id="np2" placeholder="repita"></div>
+    <div id="npMsg" class="err"></div></div>
+    <div class="modal-foot"><button class="btn ghost" data-x>Cancelar</button><button class="btn" id="npSave">Salvar</button></div></div>`;
+  $("#modalMount").appendChild(bg);
+  bg.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>bg.remove());
+  bg.onclick=e=>{if(e.target===bg)bg.remove();};
+  bg.querySelector("#npSave").onclick=async()=>{
+    const a=bg.querySelector("#np1").value,b=bg.querySelector("#np2").value,msg=bg.querySelector("#npMsg");
+    if(a.length<6){msg.textContent="Mínimo 6 caracteres.";return;}
+    if(a!==b){msg.textContent="As senhas não conferem.";return;}
+    const btn=bg.querySelector("#npSave");btn.disabled=true;
+    try{ await Store.trocarSenha(a); bg.remove(); toast("Senha alterada com sucesso"); }
+    catch(e){ msg.textContent=e.message||"Erro ao trocar."; btn.disabled=false; }
+  };
+};
 $("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="backup-contratos-fortuna-"+todayISO()+".json";a.click();URL.revokeObjectURL(a.href);};
 $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
@@ -1543,6 +1577,7 @@ window.BGFX=(function(){
   catch(e){ $("#gateErr").textContent="Aviso: "+(e.message||"falha ao conectar. Verifique a configuração do Supabase."); }
   if(!CLOUD)CONNECTED=true;
   renderGateTeam(); updateCloud();
+  if(CLOUD && SESSION){ try{ const role=await Store.resolvePapel(); enterUI(role); }catch(e){} }
 })();
 </script>
 </body>
