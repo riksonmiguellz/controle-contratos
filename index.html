@@ -1038,7 +1038,7 @@ const FX_STORE_KEY="fortuna_fx";
 let FX={scenario:"realista",horizon:12};
 try{ const s=JSON.parse(localStorage.getItem(FX_STORE_KEY)||"{}"); FX={...FX,...s}; }catch(e){}
 function fxSave(){ try{localStorage.setItem(FX_STORE_KEY,JSON.stringify(FX));}catch(e){} }
-function caixaInicial(){ return +((APPCFG.caixa_inicial||"").toString().replace(/\./g,"").replace(",","."))|| +((APPCFG.caixa_inicial||0)) ||0; }
+function caixaInicial(){ const v=APPCFG.caixa_inicial; if(v==null||v==="")return 0; if(typeof v==="number")return v; let s=String(v).trim(); if(s.indexOf(",")>=0){ s=s.replace(/\./g,"").replace(",","."); } const n=parseFloat(s); return isFinite(n)?n:0; }
 function negProb(){ const v=+(APPCFG.neg_prob); return (isFinite(v)&&v>=0&&v<=100)?v:50; }
 function ymOf(iso){ return iso?String(iso).slice(0,7):""; }
 function ymOfDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
@@ -1047,35 +1047,38 @@ function contractWindow(c){
   let startYM=ymOf(c.dataInicio);
   if(!startYM){ const vs=getFin(c).parcelas.map(p=>p.venc).filter(Boolean).sort(); startYM=vs.length?ymOf(vs[0]):ymOfDate(new Date()); }
   let endYM=ymOf(c.dataFim);
+  if(endYM && /-01$/.test(String(c.dataFim||""))){ const [Y,M]=endYM.split("-").map(Number); endYM=ymOfDate(new Date(Y,M-2,1)); } // dia 01 = termina no fim do mês anterior
   if(!endYM&&c.dataInicio&&c.prazoValor){ const di=parseISO(c.dataInicio);
-    if(di&&!isNaN(di)){ const meses=c.prazoTipo==="dias"?Math.ceil((+c.prazoValor)/30):(+c.prazoValor); const e=new Date(di.getFullYear(),di.getMonth()+Math.max(0,meses-1),1); endYM=ymOfDate(e); } }
+    if(di&&!isNaN(di)){ const dias=c.prazoTipo==="dias"?(+c.prazoValor):0; const e = dias? new Date(di.getFullYear(),di.getMonth(),di.getDate()+dias) : new Date(di.getFullYear(),di.getMonth()+Math.max(0,(+c.prazoValor)-1),1); endYM=ymOfDate(e); } }
   return {startYM,endYM};
 }
 function ymInWindow(ym,s,e){ if(s&&ym<s)return false; if(e&&ym>e)return false; return true; }
-function contractRevenueMonth(c,ym,{allowRecorr=true}={}){
+function contractRevenueMonth(c,ym,{allowRecorr=true,firstYM=null}={}){
   const fin=getFin(c);
-  const par=fin.parcelas.filter(p=>p.venc&&ymOf(p.venc)===ym);
-  if(par.length) return par.reduce((s,p)=>s+(+p.valor||0),0);      // parcela lançada manda
-  if(allowRecorr&&(+fin.valorMensal>0)){ const w=contractWindow(c); if(ymInWindow(ym,w.startYM,w.endYM)) return +fin.valorMensal; }
-  return 0;
+  const here=fin.parcelas.filter(p=>p.venc&&ymOf(p.venc)===ym);
+  let r=0;
+  if(here.length){ r+=here.filter(p=>!p.pago).reduce((s,p)=>s+(+p.valor||0),0); }   // parcela manda; pagas já estão no caixa
+  else if(allowRecorr&&(+fin.valorMensal>0)){ const w=contractWindow(c); if(ymInWindow(ym,w.startYM,w.endYM)) r+=+fin.valorMensal; }
+  if(firstYM&&ym===firstYM){ r+=fin.parcelas.filter(p=>!p.pago&&p.venc&&ymOf(p.venc)<firstYM).reduce((s,p)=>s+(+p.valor||0),0); } // atrasadas em aberto entram no 1º mês
+  return r;
 }
 function contractsForScenario(){
   const firmes=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao"&&s!=="encerrado";});
   const neg=DB.filter(c=>statusEfetivo(c)==="negociacao");
   return {firmes,neg};
 }
-function receitaMes(ym,scenario){
+function receitaMes(ym,scenario,firstYM){
   const {firmes,neg}=contractsForScenario(); let r=0;
   const rec=scenario!=="conservador";
-  firmes.forEach(c=>{ r+=contractRevenueMonth(c,ym,{allowRecorr:rec}); });
-  if(scenario==="otimista"){ const p=negProb()/100; neg.forEach(c=>{ r+=contractRevenueMonth(c,ym,{allowRecorr:true})*p; }); }
+  firmes.forEach(c=>{ r+=contractRevenueMonth(c,ym,{allowRecorr:rec,firstYM}); });
+  if(scenario==="otimista"){ const p=negProb()/100; neg.forEach(c=>{ r+=contractRevenueMonth(c,ym,{allowRecorr:true,firstYM})*p; }); }
   return r;
 }
 function despesasMes(ym,scenario){
   let total=0; const byCat={};
   const add=(cat,v)=>{ if(!v)return; total+=v; cat=cat||"Geral"; byCat[cat]=(byCat[cat]||0)+v; };
   DESP.forEach(d=>{ if(d.valor==null)return; const rec=(d.recorrencia||"mensal");
-    if(rec==="unica"){ if(d.inicio&&d.inicio===ym) add(d.categoria,+d.valor); }
+    if(rec==="unica"){ const mes=d.inicio||ymOfDate(new Date()); if(mes===ym) add(d.categoria,+d.valor); }
     else { const okS=!d.inicio||ym>=d.inicio, okE=!d.fim||ym<=d.fim; if(okS&&okE) add(d.categoria,+d.valor); } });
   const {firmes,neg}=contractsForScenario();
   const pool=scenario==="otimista"?firmes.concat(neg):firmes;
@@ -1085,8 +1088,9 @@ function despesasMes(ym,scenario){
 function buildProjection(scenario,horizon){
   const base=new Date(); const b=new Date(base.getFullYear(),base.getMonth(),1);
   let acum=caixaInicial(); const rows=[];
+  const firstYM=ymOfDate(b);
   for(let k=0;k<horizon;k++){ const d=fxAddMonths(b,k); const ym=ymOfDate(d);
-    const receita=receitaMes(ym,scenario); const dm=despesasMes(ym,scenario);
+    const receita=receitaMes(ym,scenario,firstYM); const dm=despesasMes(ym,scenario);
     const saldo=receita-dm.total; acum+=saldo;
     rows.push({ym,label:d.toLocaleDateString("pt-BR",{month:"short",year:"2-digit"}),receita,despesa:dm.total,byCat:dm.byCat,saldo,acum}); }
   return rows;
@@ -1425,14 +1429,14 @@ function renderKpis(){
     const carteira=DB.filter(c=>{const s=statusEfetivo(c);return s!=="pausado"&&s!=="negociacao"&&s!=="encerrado";});
     const totC=carteira.reduce((s,c)=>s+getFin(c).valorTotal,0);
     const totMes=ativos.reduce((s,c)=>s+getFin(c).valorMensal,0);
-    const totR=DB.reduce((s,c)=>s+recebido(c),0);
+    const totR=carteira.reduce((s,c)=>s+recebido(c),0);
     const totAR=carteira.reduce((s,c)=>s+aReceber(c),0);
-    const despFixMes=despesaFixaMes();
+    const despMes=despesasMes(ymOfDate(new Date()),"realista").total;
     h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent",true);
-    h+=kpi("A receber / mês",fmt(totMes),"recorrente (ativos)","",true);
-    h+=kpi("Despesas fixas / mês",fmt(despFixMes),"custos mensais · abrir aba","goview",true);
-    h+=kpi("Resultado / mês",fmt(totMes-despFixMes),"receita − despesas","",true);
-    h+=kpi("Recebido",fmt(totR),"parcelas pagas","",true);
+    h+=kpi("Recorrência / mês",fmt(totMes),"MRR contratado (ativos)","",true);
+    h+=kpi("Despesas do mês",fmt(despMes),"custos do mês vigente · abrir aba","goview",true);
+    h+=kpi("Resultado / mês",fmt(totMes-despMes),"recorrência − custos do mês","",true);
+    h+=kpi("Recebido",fmt(totR),"parcelas pagas (carteira)","",true);
     h+=kpi("A receber",fmt(totAR),"parcelas em aberto","",true);
   }
   box.innerHTML=h;
