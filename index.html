@@ -1416,8 +1416,8 @@ function wireDespPanel(){
 
 function renderKpis(){
   const box=$("#kpis");const ativos=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao"&&s!=="pausado";});
-  const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
-  const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
+  const etTot=ativos.reduce((s,c)=>s+(c.etapas?.length||0),0);
+  const etDone=ativos.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
   const kpi=(lab,val,sub,cls="",small=false,filter=null)=>`<div class="kpi ${cls}${filter?" kpi-click":""}${filter&&FILTER===filter?" active":""}" ${filter?`data-kpifilter="${filter}"`:""}><div class="lab">${lab}</div><div class="val ${small?'small':''}">${val}</div>${sub?`<div class="sub">${sub}</div>`:""}</div>`;
   const emNeg=DB.filter(c=>statusEfetivo(c)==="negociacao").length;
   let h="";
@@ -1728,12 +1728,13 @@ function textoModal(titulo,sub,texto,extraBtn){
 }
 function resumoModal(){
   const hoje=new Date();
-  const ativos=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao";});
+  const operacionais=DB.filter(c=>{const s=statusEfetivo(c);return s!=="encerrado"&&s!=="negociacao"&&s!=="pausado";});
+  const ativos=operacionais;
   const emNeg=DB.filter(c=>statusEfetivo(c)==="negociacao").length;
-  const etTot=DB.reduce((s,c)=>s+(c.etapas?.length||0),0);
-  const etDone=DB.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
+  const etTot=operacionais.reduce((s,c)=>s+(c.etapas?.length||0),0);
+  const etDone=operacionais.reduce((s,c)=>s+(c.etapas?.filter(e=>isDone(e.status)).length||0),0);
   const atrasadas=[],prox=[];
-  DB.forEach(c=>{ if(statusEfetivo(c)==="encerrado")return;
+  operacionais.forEach(c=>{
     (c.etapas||[]).forEach(e=>{ if(!e.prazo||isDone(e.status))return; const dd=diasAte(e.prazo); const resp=respList(e).join(", ")||"sem responsável";
       if(dd<0)atrasadas.push(`- ${c.cliente}: ${e.nome} (${-dd} dias em atraso, com ${resp})`);
       else if(dd<=7)prox.push(`- ${c.cliente}: ${e.nome} (vence ${brDate(e.prazo)}, com ${resp})`); }); });
