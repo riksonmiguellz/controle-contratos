@@ -150,8 +150,6 @@ body.view-projetos #projWrap{display:block}
 .pj-b{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px}
 .pj-b.cc{background:rgba(109,59,245,.12);color:var(--violet)}
 .pj-b.dr{background:#eef2f7;color:#475569}
-.pj-b.na{background:color-mix(in srgb, var(--ink-soft) 12%, transparent);color:var(--ink-soft)}
-.pj-summary{font-size:11.5px;color:var(--ink-soft);padding:8px 12px;background:var(--panel-2);border:1px dashed var(--line-strong);border-radius:10px;margin-bottom:4px;text-align:center;letter-spacing:.02em}
 .pj-main{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:60vh;display:flex;flex-direction:column}
 .pj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .pj-head h3{margin:0;font-size:16px;color:var(--ink)}
@@ -626,6 +624,7 @@ const STATUS_LABEL={ativo:"Ativo",negociacao:"Em negociação",andamento:"Em and
 
 /* ---------- state ---------- */
 let DB=[];            // array de contratos (com .fin quando gestão)
+let PROJ_ONLY=[];     // projetos-puros (só na aba Projetos; fora de Contratos/KPIs/agenda)
 let DESP=[];          // despesas fixas mensais (só gestão)
 let MEMBROS=[];       // equipe / responsáveis (visível a todos)
 let NOTIF=[];         // notificações de atribuição
@@ -647,7 +646,7 @@ function seed(){return [
   {id:uid(),cliente:"LAVIH SPA — Vila Leopoldina",razao:"A&C SPA LTDA",cnpj:"61.633.043/0001-07",rep:"André Carvalho Yamaya",status:"ativo",
    dataInicio:"2026-07-02",dataFim:"2027-01-02",dataAssinatura:"2026-07-02",prazoTipo:"meses",prazoValor:6,autoProgresso:true,progressoManual:null,
    escopo:"Posicionamento em plataformas de IA (GEO/AI Visibility — ChatGPT, Gemini, Meta AI, Perplexity) e captação B2B corporativa. Landing pages, imagens, vídeos e robôs (Vendedor, Marketing, Mídias, Secretária), implantação, integração e treinamento. Regime acelerado (fast-track). Mídia paga por conta do cliente.",
-   obs:"Recorrente R$ —/mês. Rescisão livre, sem multa (via WhatsApp). Custos de mídia paga por conta do cliente.",
+   obs:"Recorrente R$ 5.000/mês. Rescisão livre, sem multa (via WhatsApp). Custos de mídia paga por conta do cliente.",
    etapas:[{nome:"Posicionamento IA / GEO (site + conteúdo estruturado)",status:"pendente"},{nome:"Landing pages responsivas",status:"pendente"},{nome:"Imagens e materiais visuais",status:"pendente"},{nome:"Vídeos promocionais / institucionais",status:"pendente"},{nome:"Robô Vendedor (WhatsApp)",status:"pendente"},{nome:"Robô de Marketing (automações/nutrição)",status:"pendente"},{nome:"Robô de Mídias (redes sociais)",status:"pendente"},{nome:"Robô Secretária (agendamentos)",status:"pendente"},{nome:"Implantação, integração e ativação",status:"pendente"},{nome:"Treinamento da equipe",status:"pendente"}],
    fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
   {id:uid(),cliente:"FENIX Consultoria em Marketing",razao:"FENIX CONSULTORIA EM MARKETING LTDA",cnpj:"37.654.879/0001-03",rep:"Claudio Rodrigo Silva",status:"ativo",
@@ -659,7 +658,7 @@ function seed(){return [
   {id:uid(),cliente:"Dingo Pet — Thaisa Fonseca Simões",razao:"Thaisa Fonseca Simões (Dingo Pet)",cnpj:"",rep:"Thaisa Fonseca Simões",status:"ativo",
    dataInicio:"2026-07-01",dataFim:"2026-11-01",dataAssinatura:"2026-07-01",prazoTipo:"meses",prazoValor:4,autoProgresso:true,progressoManual:null,
    escopo:"Desenvolvimento do app Dingo Pet (rede social de pets) para iOS e Android — do escopo à publicação nas lojas. Perfis, feed, comunidades, adoção, dicas do CEO Rocky, conta & segurança. Backend, prototipagem, testes em celular real, blindagem para as lojas e submissão (Google Play + Apple Store).",
-   obs:"Proposta DINGOPROP202607 v2. parcelado sem multa por encerramento. Custos de loja (Apple US$ —/ano, Google US$ — domínio) por conta da cliente.",
+   obs:"Proposta DINGOPROP202607 v2. 4x de R$ 3.125, sem multa por encerramento. Custos de loja (Apple US$99/ano, Google US$25, domínio) por conta da cliente.",
    etapas:[{nome:"Mês 1 — Escopo & Fundação (protótipo navegável)",status:"pendente"},{nome:"Mês 2 — Núcleo p1 (perfis, feed, login, upload)",status:"pendente"},{nome:"Mês 3 — Núcleo p2 (comunidades, adoção, dicas Rocky, blindagem)",status:"pendente"},{nome:"Mês 4 — Beta & Publicação (testes + submissão lojas)",status:"pendente"}],
    fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
   {id:uid(),cliente:"Jundiaí Realty — Negócios Imobiliários",razao:"Jundiaí Realty Negócios Imobiliários",cnpj:"56.936.063/0001-09",rep:"Angela Valle Nadeu / Felipe Nadeu",status:"ativo",
@@ -668,69 +667,6 @@ function seed(){return [
    obs:"Base ~55% entregue. Command Center completo dentro do CRM (acesso da imobiliária). Site: jundiairealty-site.netlify.app.",
    etapas:[{nome:"Marca + Site próprio",status:"concluido"},{nome:"Blog (80 artigos) + SEO base",status:"concluido"},{nome:"CRM / Central",status:"concluido"},{nome:"Captador + Radar de Terrenos (GeoJundiaí)",status:"concluido"},{nome:"Raio-X de viabilidade + Avaliação (CMA)",status:"concluido"},{nome:"SDR WhatsApp (IA)",status:"pendente"},{nome:"Tracking + Ads",status:"pendente"},{nome:"Conteúdo FB/IG",status:"pendente"}],
    anexos:[{tipo:"cc",nome:"Command Center",url:"https://crm-jundiairealty.netlify.app/",senha:""}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"Liga Hub Finance — Faculdade HUB",razao:"Liga Hub Finance (Faculdade HUB)",cnpj:"",rep:"Rikson Miguel Vivian / Fundadores",status:"ativo",
-   dataInicio:"2025-01-15",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:true,progressoManual:null,
-   escopo:"Plataforma completa da liga acadêmica de finanças da Faculdade HUB: site institucional, Área do Aluno (Cursos + Certificados), Terminal de Mercado com dados em tempo real (Ibovespa, câmbio, Selic, IPCA, cripto, notícias, agenda econômica), Newsletter semanal automatizada (Gemini 2.5 Flash + envio SMTP + LGPD), Blog aberto a publicações dos alunos, página de Equipe, integrações Gemini/RSS InfoMoney/BCB/CoinGecko.",
-   obs:"Liga acadêmica — projeto sem cobrança financeira. Deploy Hostinger (FTP via GitHub Actions). Stack: React 19 + Vite + Tailwind (front); PHP + MySQL + SMTP nativo (back). Repo: github.com/riksonmiguellz/liga-hub-finance.",
-   etapas:[{nome:"Site institucional + Equipe",status:"concluido"},{nome:"Área do Aluno + Cursos + Certificados",status:"concluido"},{nome:"Terminal de Mercado (APIs grátis, tempo real)",status:"concluido"},{nome:"Newsletter semanal (Gemini + LGPD + descadastro)",status:"concluido"},{nome:"Blog aberto para alunos publicarem",status:"pendente"},{nome:"Automação cron da newsletter (sexta 16h)",status:"pendente"},{nome:"Pré-renderização (PageSpeed 90+)",status:"pendente"}],
-   anexos:[{tipo:"cc",nome:"Site Liga Hub Finance",url:"https://ligahubfinance.com.br",senha:""}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"Airotiv — Vitória Carvalho",razao:"Vitória Carvalho (Projeto Airotiv)",cnpj:"",rep:"Vitória Carvalho",status:"ativo",
-   dataInicio:"2026-07-01",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:true,progressoManual:null,
-   escopo:"Site cristão devocional próprio da Vitória + painel de gestão (CMS) para ela publicar/atualizar tudo sozinha. Command Center dedicado com gate de acesso, painel admin, publicação de conteúdo devocional, área da comunidade. Consultoria Fortuna AI Advisors (canal: Miguel).",
-   obs:"Produção em Vercel. Painel admin em /admin.html. Command Center em /cc (gate: AIROTIV2026). v76 — Agosto/2026.",
-   etapas:[{nome:"Site devocional (produção)",status:"concluido"},{nome:"Painel admin /admin.html",status:"concluido"},{nome:"Command Center /cc com gate",status:"concluido"},{nome:"Evolução de conteúdo (CMS)",status:"andamento"}],
-   anexos:[{tipo:"cc",nome:"Command Center",url:"https://airotiv-project.vercel.app/cc",senha:"AIROTIV2026"},{tipo:"drive",nome:"Site público",url:"https://airotiv-project.vercel.app"}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"Trilha Thainá — Técnica de Laboratório",razao:"Thainá (Trilha pessoal)",cnpj:"",rep:"Thainá",status:"ativo",
-   dataInicio:"2026-05-05",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:true,progressoManual:null,
-   escopo:"Sistema pessoal de organização para técnica de laboratório acadêmico: preparação de aulas, roteiros com IA, transcrição de áudios, busca semântica em caderno pessoal, controle de itens e insumos. PWA (app web).",
-   obs:"Deploy Hostinger. Banco u883680998_trilha (phpMyAdmin). Login por username. Usuários: miguel (admin), thaina (student), shirley (student). Reset de senha via hash bcrypt.",
-   etapas:[{nome:"Estrutura + login por usuário",status:"concluido"},{nome:"Área do aluno (roteiros + IA)",status:"concluido"},{nome:"Transcrição de áudios + busca semântica",status:"concluido"},{nome:"PWA / iOS push",status:"pendente"}],
-   anexos:[{tipo:"cc",nome:"Trilha Thainá",url:"https://trilhathaina.com",senha:""}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"Don Leonardo Pizza — Mari (Austrália)",razao:"Mari (Don Leonardo · Burleigh Heads, Gold Coast)",cnpj:"",rep:"Mari / Mariane",status:"ativo",
-   dataInicio:"2026-07-14",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:true,progressoManual:null,
-   escopo:"Sistema completo de gestão da pizzaria: vendas + dashboard, fichas técnicas com CMV automático, estoque com lista de pedido (Bidfood), catálogo de produtos. Menu bilíngue PT-BR/EN-AU + adesivo de parede + painéis de TV. Fase 1 entregue e em produção. Consultoria Fortuna AI (canal: Miguel; estratégia: Fábio Serrano).",
-   obs:"Sistema single-HTML (sem build). 117 lançamentos de julho importados da planilha original. Fase 2 (menu bilíngue) em produção.",
-   etapas:[{nome:"Fase 1: sistema de vendas + dashboard + CMV",status:"concluido"},{nome:"Fase 2: menu bilíngue PT/EN + adesivo",status:"andamento"},{nome:"Painéis de TV do salão",status:"pendente"}],
-   anexos:[{tipo:"cc",nome:"Sistema de controle",url:"https://donleonardo-controle.netlify.app",senha:""}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"DuoByte — Inventário Otorhinus",razao:"DuoByte / Otorhinus",cnpj:"",rep:"Cliente DuoByte",status:"ativo",
-   dataInicio:"2026-08-01",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:false,progressoManual:100,
-   escopo:"Sistema de inventário de TI para a Otorhinus: cadastro de ativos, controle de responsável, ciclos de vida, exportações. Em produção.",
-   obs:"Em produção e funcionando. Última atualização: 12/08/2026.",
-   etapas:[{nome:"Cadastro de ativos + responsáveis",status:"concluido"},{nome:"Exportações e relatórios",status:"concluido"},{nome:"Deploy Netlify",status:"concluido"}],
-   anexos:[{tipo:"cc",nome:"Inventário Otorhinus",url:"https://inventario-otorhinus.netlify.app",senha:""},{tipo:"drive",nome:"Site DuoByte",url:"https://www.duobyte.com.br"}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"FocoCerto Marketing — Site institucional",razao:"FocoCerto Marketing",cnpj:"",rep:"Miguel (rickson.vivian@gmail.com)",status:"ativo",
-   dataInicio:"2026-08-28",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:false,progressoManual:100,
-   escopo:"Site institucional da FocoCerto Marketing: identidade visual, seções de serviços, contato, integração com Instagram e LinkedIn. Deploy Vercel/Hostinger em domínio próprio.",
-   obs:"No ar em fococertomkt.com.br. Instagram @fococerto.mkt · LinkedIn /company/fococerto-marketing.",
-   etapas:[{nome:"Site institucional (produção)",status:"concluido"},{nome:"Integrações redes sociais",status:"concluido"}],
-   anexos:[{tipo:"cc",nome:"FocoCerto",url:"https://fococertomkt.com.br",senha:""},{tipo:"drive",nome:"Preview Vercel",url:"https://fococerto-site.vercel.app"}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"FocoCerto — Coleta de Kickoff",razao:"FocoCerto Marketing · Kickoff",cnpj:"",rep:"Miguel",status:"ativo",
-   dataInicio:"2026-08-15",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:false,progressoManual:100,
-   escopo:"Sistema de 3 formulários de coleta de kickoff para novos clientes: gate por senha, formulário multi-seção, tela de próximos passos. Envia respostas por e-mail. Deploy Netlify.",
-   obs:"Senha do gate em JS (portão simbólico, não protege dados). Para trocar: constante PASSWORD → rebuild → redeploy.",
-   etapas:[{nome:"3 formulários (multi-seção)",status:"concluido"},{nome:"Gate por senha",status:"concluido"},{nome:"Deploy Netlify",status:"concluido"}],
-   anexos:[{tipo:"cc",nome:"Coleta Kickoff",url:"https://fococerto-coleta-fortuna.netlify.app",senha:""}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"Real Publicidade — Portal de Captação B2B",razao:"Real Publicidade (Portal v2)",cnpj:"",rep:"Miguel",status:"ativo",
-   dataInicio:"2026-05-18",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:true,progressoManual:null,
-   escopo:"CRM / portal web de captação de leads B2B para a Real Publicidade (publicidade legal): fila de gatilhos (Jucesp/DOE-SP), enriquecimento CNPJ, mapeamento de decisor, cadência outbound, integrações com BigDataCorp/CNPJá/LinkedIn Sales Navigator.",
-   obs:"Login gate: usuário miguel · senha miguel396. Fase 0 gratuita (validação de 30 dias).",
-   etapas:[{nome:"Portal + gate",status:"concluido"},{nome:"Pipeline de captação DOE-SP",status:"andamento"},{nome:"Integração BigDataCorp/CNPJá",status:"pendente"},{nome:"Cadência Meetime",status:"pendente"}],
-   anexos:[{tipo:"cc",nome:"Portal Real Pub",url:"https://captacao-leads-real.netlify.app",senha:"miguel396"}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
-  {id:uid(),cliente:"QR Platform — Riksonmiguel",razao:"Rikson Miguel (QR Platform pessoal)",cnpj:"",rep:"Rikson Miguel",status:"ativo",
-   dataInicio:"2026-04-23",dataFim:"",dataAssinatura:"",prazoTipo:"meses",prazoValor:0,autoProgresso:false,progressoManual:100,
-   escopo:"Gerador de QR Codes: URL/WiFi/vCard/Email/SMS/WhatsApp/Pix/Texto, customização visual (cores, logo, formato dos pontos, frame SCAN ME), QRs dinâmicos com link curto rastreável, dashboard com analytics, exportação PNG/SVG/PDF.",
-   obs:"Deploy Netlify. Rotas: /generator, /dashboard, /r/<code>.",
-   etapas:[{nome:"Gerador (todos os tipos)",status:"concluido"},{nome:"QRs dinâmicos + link curto",status:"concluido"},{nome:"Dashboard + analytics",status:"concluido"}],
-   anexos:[{tipo:"cc",nome:"QR Platform",url:"https://riksonmiguel.netlify.app",senha:""}],
    fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
 ];}
 
@@ -747,10 +683,10 @@ async function ensureSB(){
 function rowToC(r,fin){return {id:r.id,cliente:r.cliente,razao:r.razao,cnpj:r.cnpj,rep:r.rep,status:r.status,
   dataInicio:r.data_inicio,dataFim:r.data_fim,dataAssinatura:r.data_assinatura,prazoTipo:r.prazo_tipo,prazoValor:r.prazo_valor,
   escopo:r.escopo,obs:r.obs,etapas:r.etapas||[],autoProgresso:r.auto_progresso!==false,progresso_manual:r.progresso_manual,
-  progressoManual:r.progresso_manual, anexos:r.anexos||[], telefone:r.telefone||"", fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
+  progressoManual:r.progresso_manual, anexos:r.anexos||[], telefone:r.telefone||"", soProjeto:r.so_projeto===true, fin: fin?{valorTotal:+fin.valor_total||0,valorMensal:+fin.valor_mensal||0,parcelas:fin.parcelas||[],despesas:fin.despesas||[]}:null};}
 function cToRow(c){return {id:c.id,cliente:c.cliente,razao:c.razao,cnpj:c.cnpj,rep:c.rep,status:c.status,
   data_inicio:c.dataInicio||null,data_fim:c.dataFim||null,data_assinatura:c.dataAssinatura||null,prazo_tipo:c.prazoTipo,prazo_valor:c.prazoValor?+c.prazoValor:null,
-  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],telefone:c.telefone||"",auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
+  escopo:c.escopo,obs:c.obs,etapas:c.etapas||[],anexos:c.anexos||[],telefone:c.telefone||"",so_projeto:!!c.soProjeto,auto_progresso:c.autoProgresso!==false,progresso_manual:(c.progressoManual===""||c.progressoManual==null)?null:+c.progressoManual};}
 function cToFinRow(c){const f=c.fin||{};return {contract_id:c.id,valor_total:+f.valorTotal||0,valor_mensal:+f.valorMensal||0,parcelas:f.parcelas||[],despesas:f.despesas||[]};}
 function rowToD(r){return {id:r.id,nome:r.nome,valor:(r.valor==null?null:+r.valor),recorrencia:r.recorrencia||"mensal",categoria:r.categoria||"",ordem:r.ordem||0,inicio:r.inicio||"",fim:r.fim||""};}
 function dToRow(d){return {id:d.id,nome:d.nome||"",valor:(d.valor===""||d.valor==null||isNaN(+d.valor))?null:+d.valor,recorrencia:d.recorrencia||"mensal",categoria:d.categoria||"",ordem:d.ordem||0,inicio:d.inicio||null,fim:d.fim||null};}
@@ -796,6 +732,7 @@ const Store={
   async init(){
     if(!CLOUD){ // LOCAL
       try{const raw=localStorage.getItem(LS_KEY);DB=raw?JSON.parse(raw):seed();}catch(e){DB=seed();}
+      PROJ_ONLY=DB.filter(c=>c&&c.soProjeto); DB=DB.filter(c=>!(c&&c.soProjeto));
       if(!localStorage.getItem(LS_KEY))this.persistLocal();
       try{const rd=localStorage.getItem(LS_KEY+"_desp");DESP=rd?JSON.parse(rd):seedDesp();}catch(e){DESP=seedDesp();}
       if(!localStorage.getItem(LS_KEY+"_desp"))this.persistDesp();
@@ -835,7 +772,7 @@ const Store={
     NOTIF=(ns||[]).map(rowToN);
     const {data:cfg}=await sb.from("app_config").select("*");
     APPCFG={}; (cfg||[]).forEach(c=>APPCFG[c.key]=c.value);
-    DB=(cs||[]).map(r=>rowToC(r,finMap[r.id]));
+    { const _all=(cs||[]).map(r=>rowToC(r,finMap[r.id])); PROJ_ONLY=_all.filter(c=>c.soProjeto); DB=_all.filter(c=>!c.soProjeto); }
   },
   async criarNotif(membro,c,etapaNome){
     if(!membro)return;
@@ -1197,8 +1134,8 @@ function despesasMes(ym,scenario){
     if(rec==="unica"){ const mes=d.inicio||ymOfDate(new Date()); if(mes===ym) add(d.categoria,+d.valor); }
     else { const okS=!d.inicio||ym>=d.inicio, okE=!d.fim||ym<=d.fim; if(okS&&okE) add(d.categoria,+d.valor); } });
   const {firmes,neg}=contractsForScenario();
-  const pool=scenario==="otimista"?firmes.concat(neg):firmes;
-  pool.forEach(c=>{ getFin(c).despesas.forEach(x=>{ if(x.data&&ymOf(x.data)===ym) add("Custos de projeto",+x.valor||0); }); });
+  firmes.forEach(c=>{ getFin(c).despesas.forEach(x=>{ if(x.data&&ymOf(x.data)===ym) add("Custos de projeto",+x.valor||0); }); });
+  if(scenario==="otimista"){ const p=negProb()/100; neg.forEach(c=>{ getFin(c).despesas.forEach(x=>{ if(x.data&&ymOf(x.data)===ym) add("Custos de projeto",(+x.valor||0)*p); }); }); } // custo de negociacao ponderado igual a receita
   return {total,byCat};
 }
 function buildProjection(scenario,horizon){
@@ -1583,7 +1520,7 @@ function projetosList(){
   // Dentro de cada grupo, encerrados vão pro fim.
   const rank=c=>getCC(c)?0:(getDrive(c)?1:2);
   const endRank=c=>statusEfetivo(c)==="encerrado"?1:0;
-  return DB.slice().sort((a,b)=>{
+  return DB.concat(PROJ_ONLY).sort((a,b)=>{
     if(rank(a)!==rank(b)) return rank(a)-rank(b);
     if(endRank(a)!==endRank(b)) return endRank(a)-endRank(b);
     return (a.cliente||"").localeCompare(b.cliente||"");
