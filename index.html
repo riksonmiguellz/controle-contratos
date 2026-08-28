@@ -242,6 +242,7 @@ body.view-alertas .kpis,body.view-alertas .toolbar,body.view-alertas #list,body.
 .scope{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink);white-space:pre-wrap}
 .anexos{display:flex;flex-direction:column;gap:8px}
 .cc-box{display:flex;flex-direction:column;gap:9px;align-items:flex-start;padding:14px;border:1px solid color-mix(in srgb,var(--violet) 30%,var(--line));border-radius:12px;background:var(--violet-tint)}
+.cc-item{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
 .cc-open{text-decoration:none;font-weight:700}
 .cc-pass{font-size:13px;color:var(--ink)}
 .cc-pass code{background:var(--panel);padding:2px 8px;border-radius:6px;font-size:12.5px;border:1px solid var(--line-strong)}
@@ -1493,7 +1494,7 @@ function cardEl(c){
   const faces=resps.slice(0,4).map(n=>{const m=MEMBROS.find(x=>x.nome===n);return `<span class="cface" title="${esc(n)}">${m&&m.foto?`<img src="${esc(m.foto)}" alt="">`:esc(iniciais(n))}</span>`;}).join("")+(resps.length>4?`<span class="cface mais">+${resps.length-4}</span>`:"");
   const money=ROLE==="gestao"?`<div class="ccard-money hide-team"><b class="mono">${fmt(getFin(c).valorTotal)}</b>${getFin(c).valorMensal?`<span>${fmt(getFin(c).valorMensal)}/mês</span>`:""}</div>`:"";
   el.innerHTML=`
-    <div class="ccard-top"><h3>${esc(c.cliente)}</h3><span class="chip ${chipCls(c)}">${STATUS_LABEL[s]||s}</span>${getCC(c)?`<span class="cc-badge" title="Tem Command Center">🎛️ CC</span>`:""}</div>
+    <div class="ccard-top"><h3>${esc(c.cliente)}</h3><span class="chip ${chipCls(c)}">${STATUS_LABEL[s]||s}</span>${getCC(c)?`<span class="cc-badge" title="Tem Command Center">🎛️ CC</span>`:""}${getDrive(c)?`<span class="cc-badge" title="Projeto no Drive">📁 Drive</span>`:""}</div>
     <div class="ccard-meta">${brDate(c.dataInicio)} → ${brDate(c.dataFim)}${c.cnpj?" · "+esc(c.cnpj):""}</div>
     <div class="ccard-prog"><div class="prog-num"><span>Progresso</span><span>${p}%${totN?` · ${doneN}/${totN}`:""}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>
     <div class="ccard-foot">${money}<div class="ccard-side">${atrasadas?`<span class="ccard-alert">${atrasadas} atrasada${atrasadas>1?"s":""}</span>`:""}${resps.length?`<div class="cfaces">${faces}</div>`:""}</div></div>
@@ -1555,14 +1556,15 @@ function bodyHtml(c){
       <tbody>${getFin(c).despesas.map((d,i)=>despRow(c,d,i)).join("")||'<tr><td colspan="4" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table>
       <button class="add-mini" data-add-desp="${c.id}">+ Lançar despesa</button></div>`;
   }
-  const cc=getCC(c);
-  const ccHtml = (cc&&cc.url) ? `<div class="sec"><div class="h">🎛️ Command Center <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">painel operacional do cliente</span></div>
-    <div class="cc-box"><a class="btn cc-open" href="${esc(cc.url)}" target="_blank" rel="noopener">🎛️ Abrir Command Center ↗</a>
-      ${cc.senha?`<div class="cc-pass">🔑 Senha: <code>${esc(cc.senha)}</code> <button class="linkbtn" type="button" data-cc-copy="${esc(cc.senha)}">copiar</button></div>`:""}
-      <a class="cc-url" href="${esc(cc.url)}" target="_blank" rel="noopener">${esc(cc.url)}</a></div></div>` : "";
+  const cc=getCC(c), dr=getDrive(c);
+  const acc=[];
+  if(cc&&cc.url) acc.push(`<div class="cc-item"><a class="btn cc-open" href="${esc(cc.url)}" target="_blank" rel="noopener">🎛️ Abrir Command Center ↗</a>${cc.senha?`<span class="cc-pass">🔑 <code>${esc(cc.senha)}</code> <button class="linkbtn" type="button" data-cc-copy="${esc(cc.senha)}">copiar</button></span>`:""}</div>`);
+  if(dr&&dr.url) acc.push(`<div class="cc-item"><a class="btn ghost cc-open" href="${esc(dr.url)}" target="_blank" rel="noopener">📁 Abrir Projeto no Drive ↗</a></div>`);
+  const ccHtml = acc.length ? `<div class="sec"><div class="h">Acessos rápidos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">painel & arquivos do cliente</span></div>
+    <div class="cc-box">${acc.join("")}</div></div>` : "";
   let docs="";
   if(ROLE==="gestao"){
-    const ax=(c.anexos||[]).filter(a=>a&&a.tipo!=="cc");
+    const ax=(c.anexos||[]).filter(a=>a&&a.tipo!=="cc"&&a.tipo!=="drive");
     docs=`<div class="sec hide-team"><div class="h">Documentos / anexos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">visível só na Gestão</span></div>
       ${ax.length?`<div class="anexos">${ax.map(a=>`<a class="anexo" href="${esc(a.url)}" target="_blank" rel="noopener">📎 <span>${esc(a.nome||"arquivo")}</span></a>`).join("")}</div>`:'<div class="scope">Nenhum anexo. Edite o contrato para adicionar links.</div>'}</div>`;
   }
@@ -1574,6 +1576,7 @@ function bodyHtml(c){
   return meta+ccHtml+escopo+etapas+cronoHtml(c)+fin+docs+obs+actions;
 }
 function getCC(c){ return (c.anexos||[]).find(a=>a&&a.tipo==="cc")||null; }
+function getDrive(c){ return (c.anexos||[]).find(a=>a&&a.tipo==="drive")||null; }
 function respList(e){ return Array.isArray(e.resps)?e.resps:(e.resp?[e.resp]:[]); }
 function stageRow(c,e,i){
   const done=isDone(e.status);
@@ -1688,6 +1691,9 @@ function contractModal(id){
       <div class="field"><label>🎛️ Command Center (painel do cliente)</label>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="f-ccurl" value="${esc((getCC(c)||{}).url||"")}" placeholder="https://cliente-cc.vercel.app" style="flex:2;min-width:180px"><input id="f-ccsenha" value="${esc((getCC(c)||{}).senha||"")}" placeholder="senha de acesso (opcional)" style="flex:1;min-width:120px"></div>
         <div style="font-size:11.5px;color:var(--ink-soft);margin-top:5px">Vira um botão de acesso rápido no detalhe do contrato — visível para a equipe também.</div></div>
+      <div class="field"><label>📁 Projeto no Drive (pasta do cliente)</label>
+        <input id="f-driveurl" value="${esc((getDrive(c)||{}).url||"")}" placeholder="https://drive.google.com/drive/folders/...">
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:5px">Cole o link da pasta do projeto no Google Drive — vira botão de acesso rápido (equipe também vê).</div></div>
       <div class="field"><label>Parcelas ${ROLE==="gestao"?"":"(somente Gestão)"}</label><div id="parcWrap"></div><button class="add-mini" id="addParc" type="button">+ Adicionar parcela</button></div>
       <div class="field"><label>Observações</label><textarea id="f-obs" rows="2">${esc(c.obs)}</textarea></div>
     </div>
@@ -1725,9 +1731,11 @@ function contractModal(id){
     c.dataInicio=m.querySelector("#f-ini").value;c.dataFim=m.querySelector("#f-fim").value;c.dataAssinatura=m.querySelector("#f-ass").value;
     c.prazoValor=m.querySelector("#f-prazoV").value;c.prazoTipo=m.querySelector("#f-prazoT").value;
     c.escopo=m.querySelector("#f-escopo").value.trim();c.obs=m.querySelector("#f-obs").value.trim();
-    c.anexos=(c.anexos||[]).filter(a=>a&&a.url&&a.url.trim()&&a.tipo!=="cc");
+    c.anexos=(c.anexos||[]).filter(a=>a&&a.url&&a.url.trim()&&a.tipo!=="cc"&&a.tipo!=="drive");
     { const ccurl=(m.querySelector("#f-ccurl").value||"").trim(); const ccsenha=(m.querySelector("#f-ccsenha").value||"").trim();
-      if(ccurl) c.anexos.push({tipo:"cc",nome:"Command Center",url:ccurl,senha:ccsenha}); }
+      if(ccurl) c.anexos.push({tipo:"cc",nome:"Command Center",url:ccurl,senha:ccsenha});
+      const drurl=(m.querySelector("#f-driveurl").value||"").trim();
+      if(drurl) c.anexos.push({tipo:"drive",nome:"Projeto no Drive",url:drurl}); }
     c.fin.valorTotal=+m.querySelector("#f-valor").value||0;c.fin.valorMensal=+m.querySelector("#f-mensal").value||0;
     if(!c.dataFim&&c.dataInicio&&c.prazoValor)c.dataFim=c.prazoTipo==="dias"?addDays(c.dataInicio,+c.prazoValor):addMonths(c.dataInicio,+c.prazoValor);
     const btn=m.querySelector("#saveC");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando';
