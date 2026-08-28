@@ -126,13 +126,15 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .viewnav button:hover{border-color:var(--violet);color:var(--violet)}
 .viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
-#despWrap,#fluxoWrap,#agendaWrap{display:none}
+#despWrap,#fluxoWrap,#agendaWrap,#alertWrap{display:none}
 body.view-despesas #alertWrap,body.view-despesas #membrosWrap,body.view-despesas #atribWrap,body.view-despesas .kpis,body.view-despesas .toolbar,body.view-despesas #list,
 body.view-fluxo #alertWrap,body.view-fluxo #membrosWrap,body.view-fluxo #atribWrap,body.view-fluxo .kpis,body.view-fluxo .toolbar,body.view-fluxo #list,
 body.view-agenda #alertWrap,body.view-agenda #membrosWrap,body.view-agenda #atribWrap,body.view-agenda .kpis,body.view-agenda .toolbar,body.view-agenda #list{display:none}
 body.view-despesas #despWrap{display:block}
 body.view-fluxo #fluxoWrap{display:block}
 body.view-agenda #agendaWrap{display:block}
+body.view-alertas #alertWrap{display:block}
+body.view-alertas .kpis,body.view-alertas .toolbar,body.view-alertas #list,body.view-alertas #membrosWrap,body.view-alertas #atribWrap{display:none}
 .agenda-frame{width:100%;height:72vh;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .agenda-frame iframe{width:100%;height:100%;border:0}
 .agenda-warn{margin:0 0 12px;padding:10px 13px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;line-height:1.5}
@@ -239,6 +241,13 @@ body.view-agenda #agendaWrap{display:block}
 .mi .v{font-weight:650;margin-top:3px;font-size:14px}
 .scope{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:14px;color:var(--ink);white-space:pre-wrap}
 .anexos{display:flex;flex-direction:column;gap:8px}
+.cc-box{display:flex;flex-direction:column;gap:9px;align-items:flex-start;padding:14px;border:1px solid color-mix(in srgb,var(--violet) 30%,var(--line));border-radius:12px;background:var(--violet-tint)}
+.cc-open{text-decoration:none;font-weight:700}
+.cc-pass{font-size:13px;color:var(--ink)}
+.cc-pass code{background:var(--panel);padding:2px 8px;border-radius:6px;font-size:12.5px;border:1px solid var(--line-strong)}
+.cc-url{font-size:11.5px;color:var(--ink-soft);word-break:break-all;text-decoration:none}
+.cc-url:hover{color:var(--violet)}
+.cc-badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--violet);background:var(--violet-tint);border:1px solid color-mix(in srgb,var(--violet) 28%,transparent);padding:2px 7px;border-radius:999px}
 .anexo{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:11px 13px;text-decoration:none;color:var(--ink);font-weight:600;font-size:13.5px;transition:.15s}
 .anexo:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-tint)}
 .anexo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -518,6 +527,7 @@ body.team .hide-team{display:none !important}
   <div class="wrap">
     <div class="viewnav" id="viewnav">
       <button data-view="contratos" class="active">📋 Contratos</button>
+      <button data-view="alertas">⏰ Alertas & prazos</button>
       <button data-view="agenda">📅 Agenda</button>
       <button data-view="despesas" class="hide-team">💸 Custos & Despesas</button>
       <button data-view="fluxo" class="hide-team">📈 Fluxo de caixa</button>
@@ -992,6 +1002,7 @@ function renderAlertas(){
   wrap.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>gotoContract(b.dataset.goto));
 }
 function gotoContract(id){
+  if(VIEW!=="contratos")switchView("contratos");
   FILTER="todos"; QUERY=""; const q=$("#q"); if(q)q.value="";
   const seg=$("#filterSeg"); if(seg)seg.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x.dataset.f==="todos"));
   renderList();
@@ -1450,10 +1461,11 @@ function setFilter(f){
 }
 function switchView(v){
   VIEW=v;
-  document.body.classList.remove("view-despesas","view-fluxo","view-agenda");
+  document.body.classList.remove("view-despesas","view-fluxo","view-agenda","view-alertas");
   if(v!=="contratos")document.body.classList.add("view-"+v);
   if(v==="fluxo")renderFluxo();
   if(v==="agenda")renderAgenda();
+  if(v==="alertas")renderAlertas();
   const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -1477,7 +1489,7 @@ function cardEl(c){
   const faces=resps.slice(0,4).map(n=>{const m=MEMBROS.find(x=>x.nome===n);return `<span class="cface" title="${esc(n)}">${m&&m.foto?`<img src="${esc(m.foto)}" alt="">`:esc(iniciais(n))}</span>`;}).join("")+(resps.length>4?`<span class="cface mais">+${resps.length-4}</span>`:"");
   const money=ROLE==="gestao"?`<div class="ccard-money hide-team"><b class="mono">${fmt(getFin(c).valorTotal)}</b>${getFin(c).valorMensal?`<span>${fmt(getFin(c).valorMensal)}/mês</span>`:""}</div>`:"";
   el.innerHTML=`
-    <div class="ccard-top"><h3>${esc(c.cliente)}</h3><span class="chip ${chipCls(c)}">${STATUS_LABEL[s]||s}</span></div>
+    <div class="ccard-top"><h3>${esc(c.cliente)}</h3><span class="chip ${chipCls(c)}">${STATUS_LABEL[s]||s}</span>${getCC(c)?`<span class="cc-badge" title="Tem Command Center">🎛️ CC</span>`:""}</div>
     <div class="ccard-meta">${brDate(c.dataInicio)} → ${brDate(c.dataFim)}${c.cnpj?" · "+esc(c.cnpj):""}</div>
     <div class="ccard-prog"><div class="prog-num"><span>Progresso</span><span>${p}%${totN?` · ${doneN}/${totN}`:""}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>
     <div class="ccard-foot">${money}<div class="ccard-side">${atrasadas?`<span class="ccard-alert">${atrasadas} atrasada${atrasadas>1?"s":""}</span>`:""}${resps.length?`<div class="cfaces">${faces}</div>`:""}</div></div>
@@ -1539,9 +1551,14 @@ function bodyHtml(c){
       <tbody>${getFin(c).despesas.map((d,i)=>despRow(c,d,i)).join("")||'<tr><td colspan="4" style="color:var(--ink-soft)">Nenhuma despesa lançada.</td></tr>'}</tbody></table>
       <button class="add-mini" data-add-desp="${c.id}">+ Lançar despesa</button></div>`;
   }
+  const cc=getCC(c);
+  const ccHtml = (cc&&cc.url) ? `<div class="sec"><div class="h">🎛️ Command Center <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">painel operacional do cliente</span></div>
+    <div class="cc-box"><a class="btn cc-open" href="${esc(cc.url)}" target="_blank" rel="noopener">🎛️ Abrir Command Center ↗</a>
+      ${cc.senha?`<div class="cc-pass">🔑 Senha: <code>${esc(cc.senha)}</code> <button class="linkbtn" type="button" data-cc-copy="${esc(cc.senha)}">copiar</button></div>`:""}
+      <a class="cc-url" href="${esc(cc.url)}" target="_blank" rel="noopener">${esc(cc.url)}</a></div></div>` : "";
   let docs="";
   if(ROLE==="gestao"){
-    const ax=c.anexos||[];
+    const ax=(c.anexos||[]).filter(a=>a&&a.tipo!=="cc");
     docs=`<div class="sec hide-team"><div class="h">Documentos / anexos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">visível só na Gestão</span></div>
       ${ax.length?`<div class="anexos">${ax.map(a=>`<a class="anexo" href="${esc(a.url)}" target="_blank" rel="noopener">📎 <span>${esc(a.nome||"arquivo")}</span></a>`).join("")}</div>`:'<div class="scope">Nenhum anexo. Edite o contrato para adicionar links.</div>'}</div>`;
   }
@@ -1550,8 +1567,9 @@ function bodyHtml(c){
       <button class="btn ghost sm" data-edit="${c.id}">✏️ Editar contrato</button>
       <button class="btn ghost sm" data-dup="${c.id}">Duplicar</button>
       <button class="btn danger sm" data-del="${c.id}">Excluir</button></div>`:"";
-  return meta+escopo+etapas+cronoHtml(c)+fin+docs+obs+actions;
+  return meta+ccHtml+escopo+etapas+cronoHtml(c)+fin+docs+obs+actions;
 }
+function getCC(c){ return (c.anexos||[]).find(a=>a&&a.tipo==="cc")||null; }
 function respList(e){ return Array.isArray(e.resps)?e.resps:(e.resp?[e.resp]:[]); }
 function stageRow(c,e,i){
   const done=isDone(e.status);
@@ -1581,6 +1599,7 @@ function parcelaRow(c,p,i){const t=todayISO(),venc=!p.pago&&p.venc&&p.venc<t;con
 function despRow(c,d,i){return `<tr><td>${esc(d.desc||"—")}</td><td>${brDate(d.data)}</td><td class="r mono">${fmt(d.valor)}</td><td class="r"><button class="link" style="color:var(--crit)" data-deldesp="${c.id}:${i}">remover</button></td></tr>`;}
 
 function wireBody(el,c){
+  el.querySelectorAll("[data-cc-copy]").forEach(b=>b.onclick=ev=>{ev.stopPropagation(); const s=b.dataset.ccCopy; try{navigator.clipboard.writeText(s); toast("Senha copiada");}catch(e){ toast("Copie manual: "+s); }});
   el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
     try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
@@ -1662,6 +1681,9 @@ function contractModal(id){
       <div class="field"><label>Escopo contratado</label><textarea id="f-escopo" rows="4">${esc(c.escopo)}</textarea></div>
       <div class="field"><label>Etapas / entregas</label><div id="stagesWrap"></div><button class="add-mini" id="addStage" type="button">+ Adicionar etapa</button></div>
       <div class="field"><label>Documentos / anexos (links) — visível só na Gestão</label><div id="anexWrap"></div><button class="add-mini" id="addAnex" type="button">+ Adicionar anexo (link)</button></div>
+      <div class="field"><label>🎛️ Command Center (painel do cliente)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><input id="f-ccurl" value="${esc((getCC(c)||{}).url||"")}" placeholder="https://cliente-cc.vercel.app" style="flex:2;min-width:180px"><input id="f-ccsenha" value="${esc((getCC(c)||{}).senha||"")}" placeholder="senha de acesso (opcional)" style="flex:1;min-width:120px"></div>
+        <div style="font-size:11.5px;color:var(--ink-soft);margin-top:5px">Vira um botão de acesso rápido no detalhe do contrato — visível para a equipe também.</div></div>
       <div class="field"><label>Parcelas ${ROLE==="gestao"?"":"(somente Gestão)"}</label><div id="parcWrap"></div><button class="add-mini" id="addParc" type="button">+ Adicionar parcela</button></div>
       <div class="field"><label>Observações</label><textarea id="f-obs" rows="2">${esc(c.obs)}</textarea></div>
     </div>
@@ -1699,7 +1721,9 @@ function contractModal(id){
     c.dataInicio=m.querySelector("#f-ini").value;c.dataFim=m.querySelector("#f-fim").value;c.dataAssinatura=m.querySelector("#f-ass").value;
     c.prazoValor=m.querySelector("#f-prazoV").value;c.prazoTipo=m.querySelector("#f-prazoT").value;
     c.escopo=m.querySelector("#f-escopo").value.trim();c.obs=m.querySelector("#f-obs").value.trim();
-    c.anexos=(c.anexos||[]).filter(a=>a&&a.url&&a.url.trim());
+    c.anexos=(c.anexos||[]).filter(a=>a&&a.url&&a.url.trim()&&a.tipo!=="cc");
+    { const ccurl=(m.querySelector("#f-ccurl").value||"").trim(); const ccsenha=(m.querySelector("#f-ccsenha").value||"").trim();
+      if(ccurl) c.anexos.push({tipo:"cc",nome:"Command Center",url:ccurl,senha:ccsenha}); }
     c.fin.valorTotal=+m.querySelector("#f-valor").value||0;c.fin.valorMensal=+m.querySelector("#f-mensal").value||0;
     if(!c.dataFim&&c.dataInicio&&c.prazoValor)c.dataFim=c.prazoTipo==="dias"?addDays(c.dataInicio,+c.prazoValor):addMonths(c.dataInicio,+c.prazoValor);
     const btn=m.querySelector("#saveC");btn.disabled=true;btn.innerHTML='<span class="spin"></span> Salvando';
