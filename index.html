@@ -248,6 +248,9 @@ body.view-alertas .kpis,body.view-alertas .toolbar,body.view-alertas #list,body.
 .cc-url{font-size:11.5px;color:var(--ink-soft);word-break:break-all;text-decoration:none}
 .cc-url:hover{color:var(--violet)}
 .cc-badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;color:var(--violet);background:var(--violet-tint);border:1px solid color-mix(in srgb,var(--violet) 28%,transparent);padding:2px 7px;border-radius:999px}
+/* modo apresentacao: oculta valores para compartilhar tela ao vivo */
+body.privacy .mono:not(.pct), body.privacy .kpi-money .val, body.privacy .cc-pass code{ filter:blur(9px); -webkit-filter:blur(9px); user-select:none; pointer-events:none; transition:filter .12s ease; }
+body.privacy #privBtn{ background:var(--violet); color:#fff; border-color:var(--violet); }
 .anexo{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:10px;padding:11px 13px;text-decoration:none;color:var(--ink);font-weight:600;font-size:13.5px;transition:.15s}
 .anexo:hover{border-color:var(--violet);color:var(--violet);background:var(--violet-tint)}
 .anexo span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -516,6 +519,7 @@ body.team .hide-team{display:none !important}
     <span class="pill-mode" id="modePill">Local</span>
     <div class="spacer"></div>
     <button class="btn ghost sm bell" id="bellBtn" title="Minhas notificações">🔔<span class="bell-badge hidden" id="bellCount">0</span></button>
+    <button class="btn ghost sm hide-team" id="privBtn" title="Ocultar valores para compartilhar a tela ao vivo">🙈 Valores</button>
     <button class="btn ghost sm hide-team" id="exportBtn">Backup</button>
     <button class="btn ghost sm hide-team" id="importBtn">Importar</button>
     <button class="btn ghost sm hidden" id="pwChangeBtn">Trocar senha</button>
@@ -1442,12 +1446,12 @@ function renderKpis(){
     const totR=carteira.reduce((s,c)=>s+recebido(c),0);
     const totAR=carteira.reduce((s,c)=>s+aReceber(c),0);
     const despMes=despesasMes(ymOfDate(new Date()),"realista").total;
-    h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent",true);
-    h+=kpi("Recorrência / mês",fmt(totMes),"MRR contratado (ativos)","",true);
-    h+=kpi("Despesas do mês",fmt(despMes),"custos do mês vigente · abrir aba","goview",true);
-    h+=kpi("Resultado / mês",fmt(totMes-despMes),"recorrência − custos do mês","",true);
-    h+=kpi("Recebido",fmt(totR),"parcelas pagas (carteira)","",true);
-    h+=kpi("A receber",fmt(totAR),"parcelas em aberto","",true);
+    h+=kpi("Total contratado",fmt(totC),"soma dos contratos","accent kpi-money",true);
+    h+=kpi("Recorrência / mês",fmt(totMes),"MRR contratado (ativos)","kpi-money",true);
+    h+=kpi("Despesas do mês",fmt(despMes),"custos do mês vigente · abrir aba","goview kpi-money",true);
+    h+=kpi("Resultado / mês",fmt(totMes-despMes),"recorrência − custos do mês","kpi-money",true);
+    h+=kpi("Recebido",fmt(totR),"parcelas pagas (carteira)","kpi-money",true);
+    h+=kpi("A receber",fmt(totAR),"parcelas em aberto","kpi-money",true);
   }
   box.innerHTML=h;
   box.querySelectorAll("[data-kpifilter]").forEach(k=>k.onclick=()=>setFilter(k.dataset.kpifilter));
@@ -1864,6 +1868,11 @@ $("#exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(DB,null,2)],{ty
 $("#importBtn").onclick=()=>$("#fileIn").click();
 $("#fileIn").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async()=>{try{const d=JSON.parse(r.result);if(Array.isArray(d)){if(confirm("Importar backup vai adicionar/atualizar os contratos. Continuar?")){try{await Store.replaceAll(d);render();toast("Backup importado");}catch(err){toast("Erro ao importar",true);}}}else alert("Arquivo inválido.");}catch(err){alert("Não foi possível ler o arquivo.");}};r.readAsText(f);e.target.value="";};
 $("#printBtn").onclick=()=>window.print();
+/* modo apresentacao: oculta valores para compartilhar tela ao vivo */
+const PRIV_KEY="fortuna_priv";
+function applyPriv(on){ document.body.classList.toggle("privacy",on); const b=$("#privBtn"); if(b){ b.innerHTML=on?"👁️ Mostrar":"🙈 Valores"; b.title=on?"Valores ocultos — clique para mostrar":"Ocultar valores para compartilhar a tela ao vivo"; } try{localStorage.setItem(PRIV_KEY,on?"1":"0");}catch(e){} }
+{ const pb=$("#privBtn"); if(pb)pb.onclick=()=>applyPriv(!document.body.classList.contains("privacy")); }
+try{ if(localStorage.getItem(PRIV_KEY)==="1") applyPriv(true); }catch(e){}
 function renderFoot(){
   const msg=ROLE==="gestao"?(CLOUD?"Modo nuvem — dados sincronizados no Supabase. Valores e pagamentos ficam numa tabela protegida (a equipe não recebe esses dados).":"Modo local — dados salvos neste navegador. Use <b>Backup</b> para gerar arquivo e <b>Importar</b> para restaurar. Nenhum pagamento foi presumido — marque os pagos."):"Marque as etapas e ajuste o progresso conforme o andamento das entregas.";
   $("#footNote").innerHTML=`<span class="wordmark">Fortuna<b>&nbsp;AI</b> Advisors</span> · Controle de Contratos &nbsp;—&nbsp; ${msg}`;
