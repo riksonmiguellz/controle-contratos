@@ -520,6 +520,7 @@ body.team .hide-team{display:none !important}
     <span class="pill-mode" id="modePill">Local</span>
     <div class="spacer"></div>
     <button class="btn ghost sm bell" id="bellBtn" title="Minhas notificações">🔔<span class="bell-badge hidden" id="bellCount">0</span></button>
+    <a class="btn ghost sm hidden" id="driveMasterBtn" target="_blank" rel="noopener" title="Drive compartilhado — projetos com deploy (download)">📁 Drive</a>
     <button class="btn ghost sm hide-team" id="privBtn" title="Ocultar valores para compartilhar a tela ao vivo">🙈 Valores</button>
     <button class="btn ghost sm hide-team" id="exportBtn">Backup</button>
     <button class="btn ghost sm hide-team" id="importBtn">Importar</button>
@@ -909,6 +910,7 @@ function currentMembro(){
   if(EU_EMAIL){ const e=EU_EMAIL.toLowerCase(); const m=MEMBROS.find(x=>((x.loginEmail||"").toLowerCase()===e)||((x.email||"").toLowerCase()===e)); if(m)return m; }
   return null;
 }
+function renderDriveMaster(){ const b=$("#driveMasterBtn"); if(!b)return; const u=(APPCFG.drive_master||"").trim(); if(u){ b.href=u; b.classList.remove("hidden"); } else { b.classList.add("hidden"); } }
 function renderUserBadge(){
   const el=$("#userBadge"); if(!el)return;
   if(!ROLE){ el.className="userbadge hidden"; el.innerHTML=""; return; }
@@ -945,6 +947,7 @@ function enterUI(role){
   document.body.classList.toggle("team",role==="team");
   $("#rolePill").textContent = role==="gestao"?"Gestão":"Equipe";
   renderUserBadge();
+  renderDriveMaster();
   const pc=$("#pwChangeBtn"); if(pc)pc.classList.toggle("hidden", !(CLOUD&&SESSION));
   FILTER="ativo"; QUERY="";
   const seg=$("#filterSeg"); if(seg)seg.querySelectorAll("button").forEach(b=>b.classList.toggle("active",b.dataset.f==="ativo"));
