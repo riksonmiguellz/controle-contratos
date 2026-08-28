@@ -1619,7 +1619,7 @@ function cardEl(c){
   return el;
 }
 function detalheModal(id){
-  const c=DB.find(x=>x.id===id); if(!c)return;
+  const c=findC(id); if(!c)return;
   const bg=document.createElement("div"); bg.className="modal-bg"; bg.dataset.det=id;
   bg.innerHTML=`<div class="modal modal-det"><div class="modal-head">
       <h2>${esc(c.cliente)} <span class="chip ${chipCls(c)}">${STATUS_LABEL[statusEfetivo(c)]||""}</span></h2>
@@ -1686,11 +1686,13 @@ function bodyHtml(c){
   }
   const obs=(c.obs&&ROLE==="gestao")?`<div class="sec hide-team"><div class="h">Observações</div><div class="scope">${esc(c.obs)}</div></div>`:"";
   const actions=ROLE==="gestao"?`<div class="row-actions hide-team">
-      <button class="btn ghost sm" data-edit="${c.id}">✏️ Editar contrato</button>
+      <button class="btn ghost sm" data-toggletipo="${c.id}">${c.soProjeto?"➡️ Transformar em contrato ativo":"➡️ Transformar em projeto"}</button>
+      <button class="btn ghost sm" data-edit="${c.id}">✏️ Editar</button>
       <button class="btn ghost sm" data-dup="${c.id}">Duplicar</button>
       <button class="btn danger sm" data-del="${c.id}">Excluir</button></div>`:"";
   return meta+ccHtml+escopo+etapas+cronoHtml(c)+fin+docs+obs+actions;
 }
+function findC(id){ return DB.find(x=>x.id===id) || PROJ_ONLY.find(x=>x.id===id) || null; } // contrato OU projeto
 function getCC(c){ return (c.anexos||[]).find(a=>a&&a.tipo==="cc")||null; }
 function getDrive(c){ return (c.anexos||[]).find(a=>a&&a.tipo==="drive")||null; }
 function respList(e){ return Array.isArray(e.resps)?e.resps:(e.resp?[e.resp]:[]); }
@@ -1724,38 +1726,38 @@ function despRow(c,d,i){return `<tr><td>${esc(d.desc||"—")}</td><td>${brDate(d
 function wireBody(el,c){
   el.querySelectorAll("[data-cc-copy]").forEach(b=>b.onclick=ev=>{ev.stopPropagation(); const s=b.dataset.ccCopy; try{navigator.clipboard.writeText(s); toast("Senha copiada");}catch(e){ toast("Copie manual: "+s); }});
   el.querySelectorAll("[data-stage]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
-    const [id,i]=sel.dataset.stage.split(":");const ct=DB.find(x=>x.id===id);ct.etapas[+i].status=sel.value;
+    const [id,i]=sel.dataset.stage.split(":");const ct=findC(id);ct.etapas[+i].status=sel.value;
     try{await Store.patchContract(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar etapa",true);}});
   el.querySelectorAll("[data-prazo]").forEach(inp=>inp.onchange=async ev=>{ev.stopPropagation();
-    const [id,i]=inp.dataset.prazo.split(":");const ct=DB.find(x=>x.id===id);
+    const [id,i]=inp.dataset.prazo.split(":");const ct=findC(id);
     if(inp.value)ct.etapas[+i].prazo=inp.value; else delete ct.etapas[+i].prazo;
     try{await Store.patchContract(ct);softRefresh(id);renderAlertas();}catch(err){toast("Erro ao salvar prazo",true);}});
   el.querySelectorAll("[data-prazoclr]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();
-    const [id,i]=b.dataset.prazoclr.split(":");const ct=DB.find(x=>x.id===id);delete ct.etapas[+i].prazo;
+    const [id,i]=b.dataset.prazoclr.split(":");const ct=findC(id);delete ct.etapas[+i].prazo;
     try{await Store.patchContract(ct);softRefresh(id);renderAlertas();}catch(err){toast("Erro ao limpar prazo",true);}});
   el.querySelectorAll("[data-cmt]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const[id,i]=b.dataset.cmt.split(":");comentariosModal(id,+i);});
   el.querySelectorAll("[data-cob]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const[id,i]=b.dataset.cob.split(":");cobrancaModal(id,+i);});
   el.querySelectorAll("[data-respadd]").forEach(sel=>sel.onchange=async ev=>{ev.stopPropagation();
     const v=sel.value; if(!v)return;
-    const [id,i]=sel.dataset.respadd.split(":");const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
+    const [id,i]=sel.dataset.respadd.split(":");const ct=findC(id);const e=ct.etapas[+i];
     const arr=respList(e); if(arr.includes(v)){return;} arr.push(v); e.resps=arr; delete e.resp;
     try{await Store.patchContract(ct);await Store.criarNotif(v,ct,e.nome);softRefresh(id);renderBell();toast(v+" foi notificado da atribuição");}catch(err){toast("Erro ao salvar responsável",true);}});
   el.querySelectorAll("[data-respdel]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();
     const parts=b.dataset.respdel.split(":");const id=parts[0],i=parts[1],nome=parts.slice(2).join(":");
-    const ct=DB.find(x=>x.id===id);const e=ct.etapas[+i];
+    const ct=findC(id);const e=ct.etapas[+i];
     e.resps=respList(e).filter(r=>r!==nome); delete e.resp;
     try{await Store.patchContract(ct);softRefresh(id);}catch(err){toast("Erro ao remover responsável",true);}});
   el.querySelectorAll("[data-auto]").forEach(chk=>chk.onchange=async ev=>{ev.stopPropagation();
-    const ct=DB.find(x=>x.id===chk.dataset.auto);ct.autoProgresso=chk.checked;if(chk.checked)ct.progressoManual=null;else if(ct.progressoManual==null)ct.progressoManual=progress(ct);
+    const ct=findC(chk.dataset.auto);ct.autoProgresso=chk.checked;if(chk.checked)ct.progressoManual=null;else if(ct.progressoManual==null)ct.progressoManual=progress(ct);
     try{await Store.patchContract(ct);softRefresh(ct.id);renderKpis();}catch(e){toast("Erro ao salvar",true);}});
   el.querySelectorAll("[data-range]").forEach(rg=>{
     rg.oninput=ev=>{ev.stopPropagation();const pct=rg.parentElement.querySelector(".pct");if(pct)pct.textContent=rg.value+"%";const bar=el.querySelector(".bar > i");if(bar)bar.style.width=rg.value+"%";};
-    rg.onchange=async ev=>{ev.stopPropagation();const ct=DB.find(x=>x.id===rg.dataset.range);ct.autoProgresso=false;ct.progressoManual=+rg.value;
+    rg.onchange=async ev=>{ev.stopPropagation();const ct=findC(rg.dataset.range);ct.autoProgresso=false;ct.progressoManual=+rg.value;
       try{await Store.patchContract(ct);softRefresh(ct.id);renderKpis();}catch(e){toast("Erro ao salvar progresso",true);}};
   });
-  el.querySelectorAll("[data-pay]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const[id,i]=b.dataset.pay.split(":");const ct=DB.find(x=>x.id===id);
+  el.querySelectorAll("[data-pay]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const[id,i]=b.dataset.pay.split(":");const ct=findC(id);
     ct.fin.parcelas[+i].pago=!ct.fin.parcelas[+i].pago;try{await Store.saveFin(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao salvar pagamento",true);}});
-  el.querySelectorAll("[data-deldesp]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const[id,i]=b.dataset.deldesp.split(":");const ct=DB.find(x=>x.id===id);
+  el.querySelectorAll("[data-deldesp]").forEach(b=>b.onclick=async ev=>{ev.stopPropagation();const[id,i]=b.dataset.deldesp.split(":");const ct=findC(id);
     ct.fin.despesas.splice(+i,1);try{await Store.saveFin(ct);softRefresh(id);renderKpis();}catch(e){toast("Erro ao remover",true);}});
   const addD=el.querySelector("[data-add-desp]");if(addD)addD.onclick=ev=>{ev.stopPropagation();despesaModal(c.id);};
   const ed=el.querySelector("[data-edit]");if(ed)ed.onclick=ev=>{ev.stopPropagation();contractModal(c.id);};
@@ -1763,9 +1765,17 @@ function wireBody(el,c){
     try{await Store.saveContract(copy,{withFin:true});render();toast("Contrato duplicado");}catch(e){toast("Erro ao duplicar",true);}};
   const dl=el.querySelector("[data-del]");if(dl)dl.onclick=async ev=>{ev.stopPropagation();if(confirm('Excluir o contrato "'+c.cliente+'"? Esta ação não pode ser desfeita.')){
     try{await Store.remove(c.id);document.querySelectorAll(".modal-bg[data-det]").forEach(m=>m.remove());render();toast("Contrato excluído");}catch(e){toast("Erro ao excluir",true);}}};
+  const tt=el.querySelector("[data-toggletipo]");if(tt)tt.onclick=async ev=>{ev.stopPropagation();
+    const ct=findC(c.id); if(!ct)return;
+    const virandoContrato=!!ct.soProjeto;
+    const msg=virandoContrato ? 'Transformar "'+ct.cliente+'" em CONTRATO ATIVO? Passa a contar nos KPIs e no fluxo de caixa.' : 'Transformar "'+ct.cliente+'" em PROJETO? Sai dos contratos e dos KPIs/fluxo (vai só pra aba Projetos).';
+    if(!confirm(msg))return;
+    ct.soProjeto=!ct.soProjeto; if(!ct.soProjeto) ct.status="ativo"; // virou contrato -> ativo (exclusivo: nunca os dois)
+    try{ await Store.saveContract(ct); document.querySelectorAll(".modal-bg[data-det]").forEach(m=>m.remove()); render(); if(VIEW==="projetos")renderProjetos(); renderKpis(); toast(virandoContrato?"Agora é contrato ativo ✓":"Agora é projeto ✓"); }
+    catch(e){ toast("Erro ao transformar: "+(e.message||""),true); } };
 }
 function softRefresh(id){
-  const c=DB.find(x=>x.id===id); if(!c)return;
+  const c=findC(id); if(!c)return;
   const old=document.querySelector(`.ccard[data-id="${id}"]`);
   if(old)old.replaceWith(cardEl(c));
   const det=document.querySelector(`.modal-bg[data-det="${id}"]`);
@@ -1782,7 +1792,7 @@ function softRefresh(id){
    ============================================================ */
 function contractModal(id){
   const editing=!!id;
-  const c=editing?JSON.parse(JSON.stringify(DB.find(x=>x.id===id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",telefone:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:"",valorMensal:"",parcelas:[],despesas:[]}};
+  const c=editing?JSON.parse(JSON.stringify(findC(id))):{id:uid(),cliente:"",razao:"",cnpj:"",rep:"",telefone:"",status:"ativo",dataInicio:todayISO(),dataFim:"",dataAssinatura:todayISO(),prazoTipo:"meses",prazoValor:"",autoProgresso:true,progressoManual:null,escopo:"",obs:"",etapas:[],anexos:[],fin:{valorTotal:"",valorMensal:"",parcelas:[],despesas:[]}};
   if(!c.fin)c.fin={valorTotal:"",valorMensal:"",parcelas:[],despesas:[]};
   if(!c.anexos)c.anexos=[];
   const m=document.createElement("div");m.className="modal-bg";
@@ -1902,7 +1912,7 @@ function resumoModal(){
   textoModal("Resumo da semana","Texto pronto para colar no grupo. Só operacional, sem valores.",t);
 }
 function cobrancaModal(cid,pi){
-  const c=DB.find(x=>x.id===cid); if(!c)return;
+  const c=findC(cid); if(!c)return;
   const p=getFin(c).parcelas[pi]; if(!p)return;
   const dd=diasAte(p.venc), nome=c.rep||c.cliente, parc=p.label||"parcela";
   let msg;
@@ -1919,7 +1929,7 @@ function cobrancaModal(cid,pi){
   textoModal("Cobrança",sub,msg,btn);
 }
 function comentariosModal(cid,idx){
-  const c=DB.find(x=>x.id===cid); if(!c)return;
+  const c=findC(cid); if(!c)return;
   const e=(c.etapas||[])[idx]; if(!e)return;
   e.coments=e.coments||[];
   const bg=document.createElement("div"); bg.className="modal-bg";
@@ -1957,7 +1967,7 @@ function despesaModal(id){
     <div class="modal-foot"><button class="btn ghost" data-x>Cancelar</button><button class="btn" id="d-save">Adicionar</button></div></div>`;
   $("#modalMount").appendChild(m);
   m.querySelectorAll("[data-x]").forEach(b=>b.onclick=()=>m.remove());m.onclick=e=>{if(e.target===m)m.remove();};
-  m.querySelector("#d-save").onclick=async()=>{const c=DB.find(x=>x.id===id);c.fin=c.fin||{parcelas:[],despesas:[]};c.fin.despesas=c.fin.despesas||[];
+  m.querySelector("#d-save").onclick=async()=>{const c=findC(id);c.fin=c.fin||{parcelas:[],despesas:[]};c.fin.despesas=c.fin.despesas||[];
     c.fin.despesas.push({desc:m.querySelector("#d-desc").value.trim()||"Despesa",valor:+m.querySelector("#d-val").value||0,data:m.querySelector("#d-data").value});
     try{await Store.saveFin(c);m.remove();softRefresh(id);renderKpis();toast("Despesa lançada");}catch(e){toast("Erro ao salvar despesa",true);}};
 }
