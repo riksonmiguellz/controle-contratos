@@ -818,7 +818,9 @@ const Store={
     const {error}=await sb.from("despesas_fixas").delete().eq("id",id);
     if(error){ await this.reload().catch(()=>{}); throw error; }
   },
-  _upsertLocal(c){ const i=DB.findIndex(x=>x.id===c.id); if(i>=0)DB[i]=c; else DB.push(c); },
+  _upsertLocal(c){ // roteia por soProjeto: contratos->DB, projetos->PROJ_ONLY; remove do lado errado
+    const other = c.soProjeto ? DB : PROJ_ONLY; const oi=other.findIndex(x=>x.id===c.id); if(oi>=0)other.splice(oi,1);
+    const list = c.soProjeto ? PROJ_ONLY : DB; const li=list.findIndex(x=>x.id===c.id); if(li>=0)list[li]=c; else list.push(c); },
   async saveContract(c,{withFin}={}){   // criar/editar contrato (gestão)
     lastLocalWrite=Date.now();
     if(!CLOUD){ this._upsertLocal(c); this.persistLocal(); return; }
@@ -1516,11 +1518,11 @@ function switchView(v){
 /* ===== PROJETOS: Command Center embutido (ou link se não tiver) ===== */
 let PROJ_SEL=null;
 function projetosList(){
-  // Mostra TODOS os contratos. Ordena: com CC primeiro, com Drive depois, resto por último.
+  // Mostra só os PROJETOS (so_projeto=true). Ordena: com CC primeiro, com Drive depois, resto por último.
   // Dentro de cada grupo, encerrados vão pro fim.
   const rank=c=>getCC(c)?0:(getDrive(c)?1:2);
   const endRank=c=>statusEfetivo(c)==="encerrado"?1:0;
-  return DB.concat(PROJ_ONLY).sort((a,b)=>{
+  return PROJ_ONLY.slice().sort((a,b)=>{
     if(rank(a)!==rank(b)) return rank(a)-rank(b);
     if(endRank(a)!==endRank(b)) return endRank(a)-endRank(b);
     return (a.cliente||"").localeCompare(b.cliente||"");
@@ -1530,8 +1532,8 @@ function renderProjetos(){
   const wrap=$("#projWrap"); if(!wrap)return;
   const items=projetosList();
   if(!items.length){
-    wrap.innerHTML=`<div class="empty">Nenhum contrato cadastrado ainda.<br>
-      <span style="font-size:13px;color:var(--ink-soft)">Adicione um contrato em <b>Contratos → + Novo contrato</b>. Ele aparece aqui automaticamente.</span></div>`;
+    wrap.innerHTML=`<div class="empty">Nenhum projeto marcado ainda.<br>
+      <span style="font-size:13px;color:var(--ink-soft)">Projetos são os registros marcados como <b>“só projeto”</b> (fora dos contratos). Marque um no formulário do registro para ele aparecer aqui.</span></div>`;
     return;
   }
   if(!PROJ_SEL || !items.some(c=>c.id===PROJ_SEL)) PROJ_SEL=items[0].id;
@@ -1791,7 +1793,8 @@ function contractModal(id){
       <div class="field-row"><div class="field"><label>Responsável / contato</label><input id="f-rep" value="${esc(c.rep)}"></div>
         <div class="field"><label>WhatsApp do cliente <span style="font-weight:400;color:var(--ink-soft)">(cobrança)</span></label><input id="f-tel" value="${esc(c.telefone||"")}" placeholder="(11) 90000-0000" inputmode="tel"></div></div>
       <div class="field-row">
-        <div class="field"><label>Status</label><select id="f-status">${["ativo","negociacao","pausado","encerrado"].map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${STATUS_LABEL[s]}</option>`).join("")}</select></div></div>
+        <div class="field"><label>Status</label><select id="f-status">${["ativo","negociacao","pausado","encerrado"].map(s=>`<option value="${s}" ${c.status===s?"selected":""}>${STATUS_LABEL[s]}</option>`).join("")}</select></div>
+        <div class="field"><label>Classificação</label><label class="toggle" style="margin-top:9px"><span class="switch"><input type="checkbox" id="f-soproj" ${c.soProjeto?"checked":""}><span class="sl"></span></span> É <b>projeto</b> (aparece só na aba Projetos, fora dos contratos/KPIs)</label></div></div>
       <div class="field-row three"><div class="field"><label>Data de início</label><input type="date" id="f-ini" value="${c.dataInicio||""}"></div>
         <div class="field"><label>Data de finalização</label><input type="date" id="f-fim" value="${c.dataFim||""}"></div>
         <div class="field"><label>Assinatura</label><input type="date" id="f-ass" value="${c.dataAssinatura||""}"></div></div>
@@ -1842,6 +1845,7 @@ function contractModal(id){
     c.razao=m.querySelector("#f-razao").value.trim();c.cnpj=m.querySelector("#f-cnpj").value.trim();c.rep=m.querySelector("#f-rep").value.trim();
     c.telefone=m.querySelector("#f-tel").value.trim();
     c.status=m.querySelector("#f-status").value;
+    { const sp=m.querySelector("#f-soproj"); if(sp)c.soProjeto=sp.checked; }
     c.dataInicio=m.querySelector("#f-ini").value;c.dataFim=m.querySelector("#f-fim").value;c.dataAssinatura=m.querySelector("#f-ass").value;
     c.prazoValor=m.querySelector("#f-prazoV").value;c.prazoTipo=m.querySelector("#f-prazoT").value;
     c.escopo=m.querySelector("#f-escopo").value.trim();c.obs=m.querySelector("#f-obs").value.trim();
