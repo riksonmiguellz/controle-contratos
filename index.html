@@ -126,7 +126,7 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .viewnav button:hover{border-color:var(--violet);color:var(--violet)}
 .viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
-#despWrap,#fluxoWrap,#agendaWrap,#alertWrap{display:none}
+#despWrap,#fluxoWrap,#agendaWrap,#alertWrap,#projWrap{display:none}
 body.view-despesas #alertWrap,body.view-despesas #membrosWrap,body.view-despesas #atribWrap,body.view-despesas .kpis,body.view-despesas .toolbar,body.view-despesas #list,
 body.view-fluxo #alertWrap,body.view-fluxo #membrosWrap,body.view-fluxo #atribWrap,body.view-fluxo .kpis,body.view-fluxo .toolbar,body.view-fluxo #list,
 body.view-agenda #alertWrap,body.view-agenda #membrosWrap,body.view-agenda #atribWrap,body.view-agenda .kpis,body.view-agenda .toolbar,body.view-agenda #list{display:none}
@@ -137,6 +137,30 @@ body.view-alertas #alertWrap{display:block}
 body.view-alertas .kpis,body.view-alertas .toolbar,body.view-alertas #list,body.view-alertas #membrosWrap,body.view-alertas #atribWrap{display:none}
 .agenda-frame{width:100%;height:72vh;border-radius:12px;overflow:hidden;border:1px solid var(--line)}
 .agenda-frame iframe{width:100%;height:100%;border:0}
+/* ===== view PROJETOS (command center embutido) ===== */
+body.view-projetos #alertWrap,body.view-projetos #membrosWrap,body.view-projetos #atribWrap,body.view-projetos .kpis,body.view-projetos .toolbar,body.view-projetos #list,body.view-projetos #agendaWrap,body.view-projetos #despWrap,body.view-projetos #fluxoWrap{display:none}
+body.view-projetos #projWrap{display:block}
+.pj-layout{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start}
+.pj-side{display:flex;flex-direction:column;gap:8px;max-height:80vh;overflow:auto;padding-right:2px}
+.pj-item{text-align:left;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;padding:12px 14px;cursor:pointer;font-family:inherit;transition:.15s;display:flex;flex-direction:column;gap:7px}
+.pj-item:hover{border-color:var(--violet)}
+.pj-item.active{border-color:var(--violet);box-shadow:0 8px 20px -10px rgba(109,59,245,.5);background:linear-gradient(180deg,rgba(109,59,245,.06),transparent)}
+.pj-item .pj-name{font-weight:700;font-size:14.5px;color:var(--ink)}
+.pj-item .pj-badges{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pj-b{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px}
+.pj-b.cc{background:rgba(109,59,245,.12);color:var(--violet)}
+.pj-b.dr{background:#eef2f7;color:#475569}
+.pj-main{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;min-height:60vh;display:flex;flex-direction:column}
+.pj-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.pj-head h3{margin:0;font-size:16px;color:var(--ink)}
+.pj-sub{font-size:12.5px;color:var(--ink-soft);margin-top:3px}
+.pj-sub code{background:#f1f5f9;padding:1px 6px;border-radius:5px}
+.pj-frame{flex:1;width:100%;min-height:70vh;background:#0b1020}
+.pj-frame iframe{width:100%;height:100%;min-height:70vh;border:0;display:block}
+.pj-fallback{padding:9px 16px;font-size:12px;color:var(--ink-soft);border-top:1px solid var(--line);background:#fafbfe}
+.pj-nocc{padding:40px 20px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:center;color:var(--ink-soft)}
+.pj-nocc .cc-open{font-size:15px}
+@media(max-width:820px){.pj-layout{grid-template-columns:1fr}.pj-side{max-height:none;flex-direction:row;overflow-x:auto}.pj-item{min-width:180px}.pj-frame,.pj-frame iframe{min-height:60vh}}
 .agenda-warn{margin:0 0 12px;padding:10px 13px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:13px;line-height:1.5}
 .agenda-help{margin-top:10px;font-size:13px}
 .agenda-help summary{cursor:pointer;font-weight:650;color:var(--violet)}
@@ -535,11 +559,13 @@ body.team .hide-team{display:none !important}
       <button data-view="contratos" class="active">📋 Contratos</button>
       <button data-view="alertas">⏰ Alertas & prazos</button>
       <button data-view="agenda">📅 Agenda</button>
+      <button data-view="projetos">🚀 Projetos</button>
       <button data-view="despesas" class="hide-team">💸 Custos & Despesas</button>
       <button data-view="fluxo" class="hide-team">📈 Fluxo de caixa</button>
       <button id="btnResumo" class="nav-acao hide-team">🗒️ Resumo da semana</button>
     </div>
     <div id="agendaWrap"></div>
+    <div id="projWrap"></div>
     <div class="kpis" id="kpis"></div>
     <div id="alertWrap"></div>
     <div id="despWrap" class="hide-team"></div>
@@ -621,18 +647,25 @@ function seed(){return [
    escopo:"Posicionamento em plataformas de IA (GEO/AI Visibility — ChatGPT, Gemini, Meta AI, Perplexity) e captação B2B corporativa. Landing pages, imagens, vídeos e robôs (Vendedor, Marketing, Mídias, Secretária), implantação, integração e treinamento. Regime acelerado (fast-track). Mídia paga por conta do cliente.",
    obs:"Recorrente R$ 5.000/mês. Rescisão livre, sem multa (via WhatsApp). Custos de mídia paga por conta do cliente.",
    etapas:[{nome:"Posicionamento IA / GEO (site + conteúdo estruturado)",status:"pendente"},{nome:"Landing pages responsivas",status:"pendente"},{nome:"Imagens e materiais visuais",status:"pendente"},{nome:"Vídeos promocionais / institucionais",status:"pendente"},{nome:"Robô Vendedor (WhatsApp)",status:"pendente"},{nome:"Robô de Marketing (automações/nutrição)",status:"pendente"},{nome:"Robô de Mídias (redes sociais)",status:"pendente"},{nome:"Robô Secretária (agendamentos)",status:"pendente"},{nome:"Implantação, integração e ativação",status:"pendente"},{nome:"Treinamento da equipe",status:"pendente"}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
+   fin:{valorTotal:30000,valorMensal:5000,parcelas:[{label:"1ª parcela",valor:5000,venc:"2026-07-03",pago:false},{label:"2ª parcela",valor:5000,venc:"2026-08-02",pago:false},{label:"3ª parcela",valor:5000,venc:"2026-09-01",pago:false},{label:"4ª parcela",valor:5000,venc:"2026-10-01",pago:false},{label:"5ª parcela",valor:5000,venc:"2026-10-31",pago:false},{label:"6ª parcela",valor:5000,venc:"2026-11-30",pago:false}],despesas:[]}},
   {id:uid(),cliente:"FENIX Consultoria em Marketing",razao:"FENIX CONSULTORIA EM MARKETING LTDA",cnpj:"37.654.879/0001-03",rep:"Claudio Rodrigo Silva",status:"ativo",
    dataInicio:"2026-05-08",dataFim:"2026-09-05",dataAssinatura:"2026-05-08",prazoTipo:"dias",prazoValor:120,autoProgresso:true,progressoManual:null,
    escopo:"3 websites responsivos; vídeos institucionais/promocionais; imagens e materiais visuais; planejamento e execução de campanha de marketing; chatbot integrado ao CRM; implantação; treinamento; planejamento comercial/estratégico; robôs para vendas.",
    obs:"Assinado digitalmente (gov.br) em 08/05/2026. Prazo: Construção 30d + Implantação, ~120 dias. Rescisão: aviso 15 dias; multa 30% do saldo remanescente.",
    etapas:[{nome:"3 websites responsivos",status:"pendente"},{nome:"Vídeos institucionais / promocionais",status:"pendente"},{nome:"Imagens e materiais visuais",status:"pendente"},{nome:"Campanha de marketing (planejamento + execução)",status:"pendente"},{nome:"Chatbot integrado ao CRM",status:"pendente"},{nome:"Implantação das soluções",status:"pendente"},{nome:"Treinamento da equipe",status:"pendente"},{nome:"Planejamento comercial / estratégico",status:"pendente"},{nome:"Robôs para vendas",status:"pendente"}],
-   fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
+   fin:{valorTotal:10000,valorMensal:2500,parcelas:[{label:"1ª parcela (assinatura)",valor:2500,venc:"2026-05-08",pago:false},{label:"2ª parcela",valor:2500,venc:"2026-06-07",pago:false},{label:"3ª parcela",valor:2500,venc:"2026-07-07",pago:false},{label:"4ª parcela",valor:2500,venc:"2026-08-06",pago:false}],despesas:[]}},
   {id:uid(),cliente:"Dingo Pet — Thaisa Fonseca Simões",razao:"Thaisa Fonseca Simões (Dingo Pet)",cnpj:"",rep:"Thaisa Fonseca Simões",status:"ativo",
    dataInicio:"2026-07-01",dataFim:"2026-11-01",dataAssinatura:"2026-07-01",prazoTipo:"meses",prazoValor:4,autoProgresso:true,progressoManual:null,
    escopo:"Desenvolvimento do app Dingo Pet (rede social de pets) para iOS e Android — do escopo à publicação nas lojas. Perfis, feed, comunidades, adoção, dicas do CEO Rocky, conta & segurança. Backend, prototipagem, testes em celular real, blindagem para as lojas e submissão (Google Play + Apple Store).",
    obs:"Proposta DINGOPROP202607 v2. 4x de R$ 3.125, sem multa por encerramento. Custos de loja (Apple US$99/ano, Google US$25, domínio) por conta da cliente.",
    etapas:[{nome:"Mês 1 — Escopo & Fundação (protótipo navegável)",status:"pendente"},{nome:"Mês 2 — Núcleo p1 (perfis, feed, login, upload)",status:"pendente"},{nome:"Mês 3 — Núcleo p2 (comunidades, adoção, dicas Rocky, blindagem)",status:"pendente"},{nome:"Mês 4 — Beta & Publicação (testes + submissão lojas)",status:"pendente"}],
+   fin:{valorTotal:12500,valorMensal:3125,parcelas:[{label:"1ª parcela (aceite)",valor:3125,venc:"2026-07-01",pago:false},{label:"2ª parcela",valor:3125,venc:"2026-08-01",pago:false},{label:"3ª parcela",valor:3125,venc:"2026-09-01",pago:false},{label:"4ª parcela",valor:3125,venc:"2026-10-01",pago:false}],despesas:[]}},
+  {id:uid(),cliente:"Jundiaí Realty — Negócios Imobiliários",razao:"Jundiaí Realty Negócios Imobiliários",cnpj:"56.936.063/0001-09",rep:"Angela Valle Nadeu / Felipe Nadeu",status:"ativo",
+   dataInicio:"2026-08-01",dataFim:"2027-08-01",dataAssinatura:"",prazoTipo:"meses",prazoValor:12,autoProgresso:false,progressoManual:55,
+   escopo:"Transformação digital completa: site próprio (vitrine + landing por imóvel + blog de 80 artigos), CRM/Central (imóveis, captação de 14.926 terrenos com camadas oficiais do GeoJundiaí, funil com distribuição automática, funcionários e acessos, régua, locação, portal e área do imóvel, Radar de Terrenos, Raio-X de viabilidade e avaliação CMA), integração Supabase. SDR de WhatsApp a plugar.",
+   obs:"Base ~55% entregue. Command Center completo dentro do CRM (acesso da imobiliária). Site: jundiairealty-site.netlify.app.",
+   etapas:[{nome:"Marca + Site próprio",status:"concluido"},{nome:"Blog (80 artigos) + SEO base",status:"concluido"},{nome:"CRM / Central",status:"concluido"},{nome:"Captador + Radar de Terrenos (GeoJundiaí)",status:"concluido"},{nome:"Raio-X de viabilidade + Avaliação (CMA)",status:"concluido"},{nome:"SDR WhatsApp (IA)",status:"pendente"},{nome:"Tracking + Ads",status:"pendente"},{nome:"Conteúdo FB/IG",status:"pendente"}],
+   anexos:[{tipo:"cc",nome:"Command Center",url:"https://crm-jundiairealty.netlify.app/",senha:""}],
    fin:{valorTotal:0,valorMensal:0,parcelas:[],despesas:[]}},
 ];}
 
@@ -1469,13 +1502,89 @@ function setFilter(f){
 }
 function switchView(v){
   VIEW=v;
-  document.body.classList.remove("view-despesas","view-fluxo","view-agenda","view-alertas");
+  document.body.classList.remove("view-despesas","view-fluxo","view-agenda","view-alertas","view-projetos");
   if(v!=="contratos")document.body.classList.add("view-"+v);
   if(v==="fluxo")renderFluxo();
   if(v==="agenda")renderAgenda();
   if(v==="alertas")renderAlertas();
+  if(v==="projetos")renderProjetos();
   const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
+}
+/* ===== PROJETOS: Command Center embutido (ou link se não tiver) ===== */
+let PROJ_SEL=null;
+function projetosList(){
+  // Mostra TODOS os contratos. Ordena: com CC primeiro, com Drive depois, resto por último.
+  // Dentro de cada grupo, encerrados vão pro fim.
+  const rank=c=>getCC(c)?0:(getDrive(c)?1:2);
+  const endRank=c=>statusEfetivo(c)==="encerrado"?1:0;
+  return DB.slice().sort((a,b)=>{
+    if(rank(a)!==rank(b)) return rank(a)-rank(b);
+    if(endRank(a)!==endRank(b)) return endRank(a)-endRank(b);
+    return (a.cliente||"").localeCompare(b.cliente||"");
+  });
+}
+function renderProjetos(){
+  const wrap=$("#projWrap"); if(!wrap)return;
+  const items=projetosList();
+  if(!items.length){
+    wrap.innerHTML=`<div class="empty">Nenhum contrato cadastrado ainda.<br>
+      <span style="font-size:13px;color:var(--ink-soft)">Adicione um contrato em <b>Contratos → + Novo contrato</b>. Ele aparece aqui automaticamente.</span></div>`;
+    return;
+  }
+  if(!PROJ_SEL || !items.some(c=>c.id===PROJ_SEL)) PROJ_SEL=items[0].id;
+  const sel=items.find(c=>c.id===PROJ_SEL)||items[0];
+  const nCC=items.filter(getCC).length, nDR=items.filter(c=>!getCC(c)&&getDrive(c)).length, nNA=items.length-nCC-nDR;
+  const summary=`<div class="pj-summary">🎛️ ${nCC} com CC · 📁 ${nDR} só Drive · ⚪ ${nNA} sem link</div>`;
+  const side=items.map(c=>{
+    const cc=getCC(c), dr=getDrive(c);
+    const badge=cc?`<span class="pj-b cc">🎛️ CC</span>`:(dr?`<span class="pj-b dr">📁 Drive</span>`:`<span class="pj-b na">⚪ sem link</span>`);
+    const st=statusEfetivo(c);
+    return `<button class="pj-item ${c.id===sel.id?"active":""}" data-pj="${esc(c.id)}">
+      <span class="pj-name">${esc(c.cliente)}</span>
+      <span class="pj-badges"><span class="chip ${chipCls(c)}">${STATUS_LABEL[st]||st}</span>${badge}</span></button>`;
+  }).join("");
+  wrap.innerHTML=`<div class="pj-layout"><aside class="pj-side">${summary}${side}</aside><section class="pj-main">${projMainHTML(sel)}</section></div>`;
+  wrap.querySelectorAll("[data-pj]").forEach(b=>b.onclick=()=>{ PROJ_SEL=b.dataset.pj; renderProjetos(); });
+  wrap.querySelectorAll("[data-cc-copy]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();const s=b.dataset.ccCopy;try{navigator.clipboard.writeText(s);toast("Senha copiada");}catch(e){toast("Copie manual: "+s);}});
+  wrap.querySelectorAll("[data-pj-open]").forEach(b=>b.onclick=()=>detalheModal(b.dataset.pjOpen));
+  wrap.querySelectorAll("[data-pj-edit]").forEach(b=>b.onclick=()=>{ if(ROLE!=="gestao"){ toast("Só a gestão pode editar."); return; } contractModal(b.dataset.pjEdit); });
+}
+function projMainHTML(c){
+  const cc=getCC(c), dr=getDrive(c);
+  if(cc&&cc.url){
+    return `<div class="pj-head">
+        <div><h3>${esc(c.cliente)}</h3><div class="pj-sub">🎛️ Command Center${cc.senha?` · 🔑 <code>${esc(cc.senha)}</code> <button class="linkbtn" type="button" data-cc-copy="${esc(cc.senha)}">copiar</button>`:""}</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost sm" type="button" data-pj-open="${esc(c.id)}">Detalhes do contrato</button>
+          <a class="btn ghost sm" href="${esc(cc.url)}" target="_blank" rel="noopener">Abrir em nova aba ↗</a>
+        </div>
+      </div>
+      <div class="pj-frame"><iframe src="${esc(cc.url)}" loading="lazy" referrerpolicy="no-referrer" title="Command Center ${esc(c.cliente)}"></iframe></div>
+      <div class="pj-fallback">Alguns painéis bloqueiam exibição embutida por segurança. Se não carregar aqui, use <b>Abrir em nova aba ↗</b>.</div>`;
+  }
+  if(dr&&dr.url){
+    return `<div class="pj-head">
+        <div><h3>${esc(c.cliente)}</h3><div class="pj-sub">Sem Command Center — acesso pelo Drive do projeto</div></div>
+        <button class="btn ghost sm" type="button" data-pj-open="${esc(c.id)}">Detalhes do contrato</button>
+      </div>
+      <div class="pj-nocc"><div>Este projeto ainda não tem Command Center embutível.</div>
+        <a class="btn cc-open" href="${esc(dr.url)}" target="_blank" rel="noopener">📁 Abrir Projeto no Drive ↗</a>
+        <button class="btn ghost sm" type="button" data-pj-edit="${esc(c.id)}">✎ Adicionar Command Center</button></div>`;
+  }
+  // Sem CC nem Drive: mostra ainda assim o card do contrato com ações úteis.
+  const editarBtn = ROLE==="gestao" ? `<button class="btn cc-open" type="button" data-pj-edit="${esc(c.id)}">✎ Adicionar Command Center ou Drive</button>` : "";
+  return `<div class="pj-head">
+      <div><h3>${esc(c.cliente)}</h3><div class="pj-sub">Sem Command Center nem pasta no Drive cadastrada</div></div>
+      <button class="btn ghost sm" type="button" data-pj-open="${esc(c.id)}">Detalhes do contrato</button>
+    </div>
+    <div class="pj-nocc">
+      <div>Nenhum link para acessar o projeto ainda.<br>
+        <span style="font-size:12.5px">${ROLE==="gestao"?"Cole o link do painel embutível (CC) ou da pasta do Drive.":"A gestão ainda não cadastrou os acessos."}</span>
+      </div>
+      ${editarBtn}
+      <button class="btn ghost sm" type="button" data-pj-open="${esc(c.id)}">🎯 Ver etapas &amp; entregas do contrato</button>
+    </div>`;
 }
 function renderList(){
   const list=$("#list");let rows=DB.slice().sort((a,b)=>(b.dataInicio||"").localeCompare(a.dataInicio||""));
