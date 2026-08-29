@@ -126,8 +126,26 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .viewnav button:hover{border-color:var(--violet);color:var(--violet)}
 .viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
-#despWrap,#fluxoWrap,#agendaWrap,#alertWrap,#projWrap,#logWrap{display:none}
+#despWrap,#fluxoWrap,#agendaWrap,#alertWrap,#projWrap,#logWrap,#portWrap{display:none}
 body.view-log #logWrap{display:block}
+body.view-portfolio #portWrap{display:block}
+/* Portfólio */
+.pf-hero{margin-bottom:18px}
+.pf-sech{font-weight:750;font-size:13.5px;margin:8px 0 12px;font-family:"Montserrat",sans-serif}
+.pf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.pf-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--panel);box-shadow:var(--shadow);display:flex;flex-direction:column;transition:.16s}
+.pf-card:hover{border-color:var(--violet);transform:translateY(-2px)}
+.pf-shot{position:relative;height:172px;overflow:hidden;background:linear-gradient(135deg,var(--violet),var(--navy));border-bottom:1px solid var(--line)}
+.pf-shot .pf-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;z-index:1}
+.pf-shot .pf-img.pf-fail{display:none}
+.pf-shot .pf-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:54px;font-weight:800;color:#fff;font-family:"Montserrat",sans-serif;opacity:.9}
+.pf-shot .pf-ov{position:absolute;inset:0;z-index:2}
+.pf-card.big .pf-shot{height:360px}
+.pf-info{padding:12px 14px;display:flex;flex-direction:column;gap:3px}
+.pf-cli{font-weight:750;font-size:14px;font-family:"Montserrat",sans-serif}
+.pf-nome{font-size:12.5px;color:var(--ink-soft)}
+.pf-info .btn{align-self:flex-start;margin-top:8px}
+.pf-tag{position:absolute;top:8px;left:8px;font-size:10px;font-weight:700;background:color-mix(in srgb,var(--panel) 82%,transparent);backdrop-filter:blur(4px);border:1px solid var(--line);border-radius:999px;padding:2px 8px;color:var(--violet)}
 /* qualquer aba != Contratos esconde a home (kpis, busca, lista, equipe) */
 body[class*="view-"] .kpis,body[class*="view-"] .toolbar,body[class*="view-"] #list,body[class*="view-"] #membrosWrap,body[class*="view-"] #atribWrap{display:none}
 body.view-financeiro #despWrap,body.view-financeiro #fluxoWrap{display:block}
@@ -574,11 +592,13 @@ body.team .hide-team{display:none !important}
       <button data-view="projetos">🚀 Projetos</button>
       <button data-view="foco">⏰ Foco de hoje</button>
       <button data-view="financeiro" class="hide-team">💰 Financeiro</button>
+      <button data-view="portfolio">🖼️ Portfólio</button>
       <button data-view="agenda">📅 Agenda</button>
       <button data-view="log" class="hide-team">🧾 Log</button>
       <button id="btnResumo" class="nav-acao hide-team">🗒️ Resumo</button>
     </div>
     <div id="agendaWrap"></div>
+    <div id="portWrap"></div>
     <div id="logWrap" class="hide-team"></div>
     <div id="projWrap"></div>
     <div class="kpis" id="kpis"></div>
@@ -1082,6 +1102,35 @@ function gotoContract(id){
   if(card){ if(!matchMedia("(prefers-reduced-motion:reduce)").matches)card.scrollIntoView({behavior:"smooth",block:"center"}); card.classList.add("flash"); setTimeout(()=>card.classList.remove("flash"),1300); }
   detalheModal(id);
 }
+function portfolioItems(){
+  const items=[], seen={};
+  DB.concat(PROJ_ONLY).forEach(c=>{ (c.anexos||[]).forEach(a=>{ if(!a||!a.url)return;
+    if(a.tipo==="cc"||a.tipo==="link"){ const key=a.url.trim(); if(seen[key])return; seen[key]=1;
+      items.push({cliente:c.cliente, nome: a.tipo==="cc"?"Command Center":(a.nome||"Sistema"), tag:a.tipo==="cc"?"Command Center":"Sistema", url:a.url}); } }); });
+  return items;
+}
+function pfCard(it,big){
+  const shot=`https://image.thum.io/get/width/1200/crop/${big?620:760}/noanimate/${it.url}`;
+  const ini=esc(((it.cliente||"?").trim()[0]||"?").toUpperCase());
+  return `<div class="pf-card${big?" big":""}">
+    <div class="pf-shot"><span class="pf-fallback">${ini}</span><img class="pf-img" src="${esc(shot)}" loading="lazy" alt="${esc(it.cliente)}" referrerpolicy="no-referrer" onerror="this.classList.add('pf-fail')">
+      ${it.tag?`<span class="pf-tag">${esc(it.tag)}</span>`:""}<a class="pf-ov" href="${esc(it.url)}" target="_blank" rel="noopener" title="Abrir ${esc(it.cliente)}"></a></div>
+    <div class="pf-info"><div class="pf-cli">${esc(it.cliente)}</div><div class="pf-nome">${esc(it.nome)}</div>
+      <a class="btn ghost sm" href="${esc(it.url)}" target="_blank" rel="noopener">Abrir ↗</a></div></div>`;
+}
+function renderPortfolio(){
+  const wrap=$("#portWrap"); if(!wrap)return;
+  const site=(APPCFG.site_empresa||"").trim();
+  const hero = site ? `<div class="pf-hero">${pfCard({cliente:"Fortuna AI Advisors", nome:"Nosso site institucional", tag:"Nosso site", url:site}, true)}</div>` : "";
+  let extras=[]; try{ extras=JSON.parse(APPCFG.portfolio_extra||"[]"); if(!Array.isArray(extras))extras=[]; }catch(e){ extras=[]; }
+  const extrasHtml = extras.length ? `<div class="pf-sech">Materiais Fortuna</div><div class="pf-grid">${extras.map(it=>pfCard({cliente:it.cliente||"Fortuna",nome:it.nome||"Material",tag:it.tag||"Fortuna",url:it.url},false)).join("")}</div>` : "";
+  const items=portfolioItems();
+  const grid = items.length ? `<div class="pf-sech">Entregas dos clientes</div><div class="pf-grid">${items.map(it=>pfCard(it,false)).join("")}</div>` : `<div class="scope" style="margin-top:12px">Nenhum entregável de cliente com link ainda.</div>`;
+  const totalCards = (site?1:0)+extras.length+items.length;
+  wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
+      <div class="c-title"><h3>Portfólio</h3><div class="meta">Prévia (screenshot) dos sites e painéis · ${totalCards} item(ns)</div></div></div>
+    <div class="card-body" style="display:block">${hero}${extrasHtml}${grid}</div></div>`;
+}
 async function renderLog(){
   const wrap=$("#logWrap"); if(!wrap||ROLE!=="gestao")return;
   wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default"><div class="c-title"><h3>Log de acessos</h3><div class="meta">Carregando…</div></div></div><div class="card-body" style="display:block"><div class="scope">Buscando registros…</div></div></div>`;
@@ -1546,13 +1595,14 @@ function setFilter(f){
 }
 function switchView(v){
   VIEW=v;
-  document.body.classList.remove("view-financeiro","view-agenda","view-foco","view-projetos","view-log");
+  document.body.classList.remove("view-financeiro","view-agenda","view-foco","view-projetos","view-log","view-portfolio");
   if(v!=="contratos")document.body.classList.add("view-"+v);
   if(v==="financeiro"){ renderDesp(); renderFluxo(); }
   if(v==="agenda")renderAgenda();
   if(v==="foco")renderAlertas();
   if(v==="projetos")renderProjetos();
   if(v==="log")renderLog();
+  if(v==="portfolio")renderPortfolio();
   const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
 }
