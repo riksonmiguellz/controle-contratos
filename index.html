@@ -1123,14 +1123,17 @@ function renderPortfolio(){
   const site=(APPCFG.site_empresa||"").trim();
   const hero = site ? `<div class="pf-hero">${pfCard({cliente:"Fortuna AI Advisors", nome:"Nosso site institucional", tag:"Nosso site", url:site}, true)}</div>` : "";
   let extras=[]; try{ extras=JSON.parse(APPCFG.portfolio_extra||"[]"); if(!Array.isArray(extras))extras=[]; }catch(e){ extras=[]; }
-  const grupos={}; extras.forEach(it=>{ if(!it||!it.url)return; const g=it.grupo||"Materiais Fortuna"; (grupos[g]=grupos[g]||[]).push(it); });
-  const extrasHtml = Object.keys(grupos).map(g=>`<div class="pf-sech">${esc(g)}</div><div class="pf-grid">${grupos[g].map(it=>pfCard({cliente:it.cliente||"Fortuna",nome:it.nome||"",tag:it.tag||"",url:it.url},false)).join("")}</div>`).join("");
-  const items=portfolioItems();
-  const grid = items.length ? `<div class="pf-sech">Entregas dos clientes</div><div class="pf-grid">${items.map(it=>pfCard(it,false)).join("")}</div>` : `<div class="scope" style="margin-top:12px">Nenhum entregável de cliente com link ainda.</div>`;
-  const totalCards = (site?1:0)+extras.length+items.length;
+  const grupos={}; extras.forEach(it=>{ if(!it||!it.url)return; const g=it.grupo||"Materiais Fortuna"; (grupos[g]=grupos[g]||[]).push({cliente:it.cliente,nome:it.nome,tag:it.tag,url:it.url}); });
+  const ENTK="Entregas Fortuna Creative";
+  portfolioItems().forEach(it=>{ (grupos[ENTK]=grupos[ENTK]||[]).push({cliente:it.cliente,nome:it.nome,tag:it.tag||"Sistema",url:it.url}); });
+  Object.keys(grupos).forEach(g=>{ const seen={}; grupos[g]=grupos[g].filter(it=>{ const k=(it.url||"").trim(); if(!k||seen[k])return false; seen[k]=1; return true; }); });
+  const ordem=["Ecossistema Fortuna","Ferramentas Fortuna",ENTK];
+  const keys=ordem.filter(k=>grupos[k]&&grupos[k].length).concat(Object.keys(grupos).filter(k=>ordem.indexOf(k)<0));
+  const sections=keys.map(g=>`<div class="pf-sech">${esc(g)}</div><div class="pf-grid">${grupos[g].map(it=>pfCard(it,false)).join("")}</div>`).join("");
+  const totalCards=(site?1:0)+keys.reduce((s,g)=>s+grupos[g].length,0);
   wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
       <div class="c-title"><h3>Portfólio</h3><div class="meta">Prévia (screenshot) dos sites e painéis · ${totalCards} item(ns)</div></div></div>
-    <div class="card-body" style="display:block">${hero}${extrasHtml}${grid}</div></div>`;
+    <div class="card-body" style="display:block">${hero}${sections||`<div class="scope" style="margin-top:12px">Sem itens ainda.</div>`}</div></div>`;
 }
 async function renderLog(){
   const wrap=$("#logWrap"); if(!wrap||ROLE!=="gestao")return;
