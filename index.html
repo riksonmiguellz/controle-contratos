@@ -126,7 +126,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--violet);outline-
 .viewnav button{background:var(--panel);border:1px solid var(--line-strong);border-radius:11px;padding:10px 16px;font-weight:650;font-size:14px;color:var(--ink-soft);font-family:inherit;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px}
 .viewnav button:hover{border-color:var(--violet);color:var(--violet)}
 .viewnav button.active{background:var(--violet);border-color:var(--violet);color:#fff;box-shadow:0 8px 18px -8px rgba(109,59,245,.55)}
-#despWrap,#fluxoWrap,#agendaWrap,#alertWrap,#projWrap{display:none}
+#despWrap,#fluxoWrap,#agendaWrap,#alertWrap,#projWrap,#logWrap{display:none}
+body.view-log #logWrap{display:block}
 /* qualquer aba != Contratos esconde a home (kpis, busca, lista, equipe) */
 body[class*="view-"] .kpis,body[class*="view-"] .toolbar,body[class*="view-"] #list,body[class*="view-"] #membrosWrap,body[class*="view-"] #atribWrap{display:none}
 body.view-financeiro #despWrap,body.view-financeiro #fluxoWrap{display:block}
@@ -574,9 +575,11 @@ body.team .hide-team{display:none !important}
       <button data-view="foco">⏰ Foco de hoje</button>
       <button data-view="financeiro" class="hide-team">💰 Financeiro</button>
       <button data-view="agenda">📅 Agenda</button>
+      <button data-view="log" class="hide-team">🧾 Log</button>
       <button id="btnResumo" class="nav-acao hide-team">🗒️ Resumo</button>
     </div>
     <div id="agendaWrap"></div>
+    <div id="logWrap" class="hide-team"></div>
     <div id="projWrap"></div>
     <div class="kpis" id="kpis"></div>
     <div id="alertWrap"></div>
@@ -887,7 +890,9 @@ const Store={
     const {error}=await sb.auth.updateUser({password:nova});
     if(error)throw new Error(error.message);
   },
-  async logout(){ if(CLOUD&&sb&&SESSION){try{await sb.auth.signOut();}catch(e){}} SESSION=false; if(CLOUD)await this.reload(); }
+  async logout(){ if(CLOUD&&sb&&SESSION){try{await sb.auth.signOut();}catch(e){}} SESSION=false; if(CLOUD)await this.reload(); },
+  async logAcesso(tipo,detalhe){ if(!CLOUD||!sb)return; try{ await sb.from("activity_log").insert({id:uid(),tipo:tipo||"acesso",membro:EU||"",email:EU_EMAIL||"",papel:ROLE||"",detalhe:detalhe||"",em:new Date().toISOString()}); }catch(e){} },
+  async fetchLog(){ if(!CLOUD||!sb)return []; try{ const {data}=await sb.from("activity_log").select("*").order("em",{ascending:false}).limit(300); return data||[]; }catch(e){ return []; } }
 };
 
 /* ---------- derived ---------- */
@@ -984,7 +989,7 @@ $("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();}
 $("#email").addEventListener("input",renderGateUser);
 async function doLogin(){
   const btn=$("#pwGo");btn.disabled=true;$("#gateErr").textContent="";
-  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); EU_EMAIL=em; try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); }
+  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); EU_EMAIL=em; try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); Store.logAcesso("acesso","login"); }
   catch(e){ $("#gateErr").textContent=e.message||"Falha no login."; $("#pw").select(); }
   finally{ btn.disabled=false; }
 }
@@ -1076,6 +1081,19 @@ function gotoContract(id){
   const card=document.querySelector(`.ccard[data-id="${id}"]`);
   if(card){ if(!matchMedia("(prefers-reduced-motion:reduce)").matches)card.scrollIntoView({behavior:"smooth",block:"center"}); card.classList.add("flash"); setTimeout(()=>card.classList.remove("flash"),1300); }
   detalheModal(id);
+}
+async function renderLog(){
+  const wrap=$("#logWrap"); if(!wrap||ROLE!=="gestao")return;
+  wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default"><div class="c-title"><h3>Log de acessos</h3><div class="meta">Carregando…</div></div></div><div class="card-body" style="display:block"><div class="scope">Buscando registros…</div></div></div>`;
+  const rows=await Store.fetchLog();
+  const nome=r=> r.membro || (r.email? String(r.email).split("@")[0] : "—");
+  const quando=iso=>{ try{ return new Date(iso).toLocaleString("pt-BR"); }catch(e){ return iso||""; } };
+  const body = rows.length ? rows.map(r=>`<tr><td style="white-space:nowrap">${esc(quando(r.em))}</td><td><b>${esc(nome(r))}</b></td><td class="mono" style="font-size:12px">${esc(r.email||"")}</td><td><span class="chip ${r.papel==="gestao"?"ativo":"pausado"}">${r.papel==="gestao"?"Gestão":"Equipe"}</span></td><td>${esc(r.detalhe||r.tipo||"")}</td></tr>`).join("") : `<tr><td colspan="5" style="color:var(--ink-soft)">Sem registros ainda — cada login passa a aparecer aqui.</td></tr>`;
+  wrap.innerHTML=`<div class="card" style="margin-bottom:22px"><div class="card-head" style="cursor:default">
+      <div class="c-title"><h3>Log de acessos</h3><div class="meta">Cada entrada na ferramenta — mais recentes primeiro · ${rows.length} registro(s)</div></div>
+      <button class="btn ghost sm" id="logReload">↻ Atualizar</button></div>
+    <div class="card-body" style="display:block"><div style="overflow-x:auto"><table class="tbl"><thead><tr><th>Quando</th><th>Quem</th><th>E-mail</th><th>Acesso</th><th>Ação</th></tr></thead><tbody>${body}</tbody></table></div></div></div>`;
+  const rb=wrap.querySelector("#logReload"); if(rb)rb.onclick=()=>renderLog();
 }
 
 let ATRIB_MEMBRO="todos";
@@ -1528,12 +1546,13 @@ function setFilter(f){
 }
 function switchView(v){
   VIEW=v;
-  document.body.classList.remove("view-financeiro","view-agenda","view-foco","view-projetos");
+  document.body.classList.remove("view-financeiro","view-agenda","view-foco","view-projetos","view-log");
   if(v!=="contratos")document.body.classList.add("view-"+v);
   if(v==="financeiro"){ renderDesp(); renderFluxo(); }
   if(v==="agenda")renderAgenda();
   if(v==="foco")renderAlertas();
   if(v==="projetos")renderProjetos();
+  if(v==="log")renderLog();
   const nav=$("#viewnav"); if(nav)nav.querySelectorAll("button[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
   if(!matchMedia("(prefers-reduced-motion:reduce)").matches)window.scrollTo({top:0,behavior:"smooth"});
 }
@@ -1632,7 +1651,7 @@ function cardEl(c){
   const faces=resps.slice(0,4).map(n=>{const m=MEMBROS.find(x=>x.nome===n);return `<span class="cface" title="${esc(n)}">${m&&m.foto?`<img src="${esc(m.foto)}" alt="">`:esc(iniciais(n))}</span>`;}).join("")+(resps.length>4?`<span class="cface mais">+${resps.length-4}</span>`:"");
   const money=ROLE==="gestao"?`<div class="ccard-money hide-team"><b class="mono">${fmt(getFin(c).valorTotal)}</b>${getFin(c).valorMensal?`<span>${fmt(getFin(c).valorMensal)}/mês</span>`:""}</div>`:"";
   el.innerHTML=`
-    <div class="ccard-top"><h3>${esc(c.cliente)}</h3><span class="chip ${chipCls(c)}">${STATUS_LABEL[s]||s}</span>${getCC(c)?`<span class="cc-badge" title="Tem Command Center">🎛️ CC</span>`:""}${getDrive(c)?`<span class="cc-badge" title="Projeto no Drive">📁 Drive</span>`:""}</div>
+    <div class="ccard-top"><h3>${esc(c.cliente)}</h3><span class="chip ${chipCls(c)}">${STATUS_LABEL[s]||s}</span>${getCC(c)?`<span class="cc-badge" title="Tem Command Center">🎛️ CC</span>`:""}${getDrive(c)?`<span class="cc-badge" title="Projeto no Drive">📁 Drive</span>`:""}${(c.anexos||[]).some(a=>a&&a.tipo==="link")?`<span class="cc-badge" title="Sistemas/links do cliente">🔗 Sistemas</span>`:""}</div>
     <div class="ccard-meta">${brDate(c.dataInicio)} → ${brDate(c.dataFim)}${c.cnpj?" · "+esc(c.cnpj):""}</div>
     <div class="ccard-prog"><div class="prog-num"><span>Progresso</span><span>${p}%${totN?` · ${doneN}/${totN}`:""}</span></div><div class="bar"><i style="width:${p}%"></i></div></div>
     <div class="ccard-foot">${money}<div class="ccard-side">${atrasadas?`<span class="ccard-alert">${atrasadas} atrasada${atrasadas>1?"s":""}</span>`:""}${resps.length?`<div class="cfaces">${faces}</div>`:""}</div></div>
@@ -1699,11 +1718,12 @@ function bodyHtml(c){
   const acc=[];
   if(cc&&cc.url) acc.push(`<div class="cc-item"><a class="btn cc-open" href="${esc(cc.url)}" target="_blank" rel="noopener">🎛️ Abrir Command Center ↗</a>${cc.senha?`<span class="cc-pass">🔑 <code>${esc(cc.senha)}</code> <button class="linkbtn" type="button" data-cc-copy="${esc(cc.senha)}">copiar</button></span>`:""}</div>`);
   if(dr&&dr.url) acc.push(`<div class="cc-item"><a class="btn ghost cc-open" href="${esc(dr.url)}" target="_blank" rel="noopener">📁 Abrir Projeto no Drive ↗</a></div>`);
-  const ccHtml = acc.length ? `<div class="sec"><div class="h">Acessos rápidos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">painel & arquivos do cliente</span></div>
+  (c.anexos||[]).filter(a=>a&&a.tipo==="link"&&a.url).forEach(a=>acc.push(`<div class="cc-item"><a class="btn ghost cc-open" href="${esc(a.url)}" target="_blank" rel="noopener">🔗 ${esc(a.nome||"Abrir link")} ↗</a>${a.obs?`<span class="cc-pass">${esc(a.obs)}</span>`:""}${a.senha?`<span class="cc-pass">🔑 <code>${esc(a.senha)}</code> <button class="linkbtn" type="button" data-cc-copy="${esc(a.senha)}">copiar</button></span>`:""}</div>`));
+  const ccHtml = acc.length ? `<div class="sec"><div class="h">Acessos rápidos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">painel, arquivos e sistemas do cliente</span></div>
     <div class="cc-box">${acc.join("")}</div></div>` : "";
   let docs="";
   if(ROLE==="gestao"){
-    const ax=(c.anexos||[]).filter(a=>a&&a.tipo!=="cc"&&a.tipo!=="drive");
+    const ax=(c.anexos||[]).filter(a=>a&&a.tipo!=="cc"&&a.tipo!=="drive"&&a.tipo!=="link");
     docs=`<div class="sec hide-team"><div class="h">Documentos / anexos <span style="color:var(--ink-soft);font-weight:400;text-transform:none;letter-spacing:0">visível só na Gestão</span></div>
       ${ax.length?`<div class="anexos">${ax.map(a=>`<a class="anexo" href="${esc(a.url)}" target="_blank" rel="noopener">📎 <span>${esc(a.nome||"arquivo")}</span></a>`).join("")}</div>`:'<div class="scope">Nenhum anexo. Edite o contrato para adicionar links.</div>'}</div>`;
   }
