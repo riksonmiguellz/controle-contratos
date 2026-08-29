@@ -1123,7 +1123,8 @@ function renderPortfolio(){
   const site=(APPCFG.site_empresa||"").trim();
   const hero = site ? `<div class="pf-hero">${pfCard({cliente:"Fortuna AI Advisors", nome:"Nosso site institucional", tag:"Nosso site", url:site}, true)}</div>` : "";
   let extras=[]; try{ extras=JSON.parse(APPCFG.portfolio_extra||"[]"); if(!Array.isArray(extras))extras=[]; }catch(e){ extras=[]; }
-  const extrasHtml = extras.length ? `<div class="pf-sech">Materiais Fortuna</div><div class="pf-grid">${extras.map(it=>pfCard({cliente:it.cliente||"Fortuna",nome:it.nome||"Material",tag:it.tag||"Fortuna",url:it.url},false)).join("")}</div>` : "";
+  const grupos={}; extras.forEach(it=>{ if(!it||!it.url)return; const g=it.grupo||"Materiais Fortuna"; (grupos[g]=grupos[g]||[]).push(it); });
+  const extrasHtml = Object.keys(grupos).map(g=>`<div class="pf-sech">${esc(g)}</div><div class="pf-grid">${grupos[g].map(it=>pfCard({cliente:it.cliente||"Fortuna",nome:it.nome||"",tag:it.tag||"",url:it.url},false)).join("")}</div>`).join("");
   const items=portfolioItems();
   const grid = items.length ? `<div class="pf-sech">Entregas dos clientes</div><div class="pf-grid">${items.map(it=>pfCard(it,false)).join("")}</div>` : `<div class="scope" style="margin-top:12px">Nenhum entregável de cliente com link ainda.</div>`;
   const totalCards = (site?1:0)+extras.length+items.length;
