@@ -989,7 +989,7 @@ $("#email").addEventListener("keydown",e=>{if(e.key==="Enter")$("#pw").focus();}
 $("#email").addEventListener("input",renderGateUser);
 async function doLogin(){
   const btn=$("#pwGo");btn.disabled=true;$("#gateErr").textContent="";
-  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); EU_EMAIL=em; try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); Store.logAcesso("acesso","login"); }
+  try{ const em=$("#email").value.trim(); const role=await Store.loginGestao(em,$("#pw").value); EU_EMAIL=em; try{localStorage.setItem("ultimo_email",em);}catch(_){} enterUI(role); Store.logAcesso("acesso","login"); try{localStorage.setItem("fortuna_log_ts",String(Date.now()));}catch(_){} }
   catch(e){ $("#gateErr").textContent=e.message||"Falha no login."; $("#pw").select(); }
   finally{ btn.disabled=false; }
 }
@@ -2110,7 +2110,9 @@ window.BGFX=(function(){
   renderGateTeam(); updateCloud();
   try{ const le=localStorage.getItem("ultimo_email"); if(le && $("#email")) $("#email").value=le; }catch(e){}
   renderGateUser();
-  if(CLOUD && SESSION){ try{ const role=await Store.resolvePapel(); enterUI(role); }catch(e){} }
+  if(CLOUD && SESSION){ try{ const role=await Store.resolvePapel(); enterUI(role);
+    try{ const last=+(localStorage.getItem("fortuna_log_ts")||0); if(Date.now()-last>1200000){ Store.logAcesso("acesso","retorno (sessão ativa)"); localStorage.setItem("fortuna_log_ts",String(Date.now())); } }catch(_){}
+  }catch(e){} }
 })();
 </script>
 </body>
